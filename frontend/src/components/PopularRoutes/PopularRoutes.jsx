@@ -44,7 +44,7 @@ const PopularRoutes = () => {
         {/* Routes Grid */}
         <div className="grid md:grid-cols-4 sm:grid-cols-2 gap-6">
 
-          {routes.map((route) => (
+          {routes?.map((route) => (
             <div
               key={route.id}
               className="bg-white rounded-xl shadow hover:shadow-lg transition overflow-hidden"
