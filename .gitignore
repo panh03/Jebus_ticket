@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 *.env
+
+seed.sql
+db.sql

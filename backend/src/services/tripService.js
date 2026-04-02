@@ -26,11 +26,14 @@ exports.searchTrips = async (from, to, date) => {
 
   // 🔥 GHÉP DATE USER VÀO TIME
   const trips = rows.map(trip => {
+    // 👉 Lấy chỉ phần date YYYY-MM-DD nếu date có T...
+    const datePart = date.split("T")[0];
 
     // 👉 ghép date + time
-    const departure = new Date(`${date}T${trip.departure_time}`);
-    let arrival = new Date(`${date}T${trip.arrival_time}`);
+    const departure = new Date(`${datePart}T${trip.departure_time}`);
+    let arrival = new Date(`${datePart}T${trip.arrival_time}`);
 
+    
     // 👉 nếu qua ngày (xe đêm)
     if (arrival < departure) {
       arrival.setDate(arrival.getDate() + 1);
@@ -43,7 +46,12 @@ exports.searchTrips = async (from, to, date) => {
     };
   });
 
-  return trips;
+  // 👇 Lọc bỏ những chuyến xe ĐÃ đi trôi qua so với date (nếu có T)
+  const filteredTrips = date.includes("T")
+    ? trips.filter(trip => trip.departure_time >= new Date(date))
+    : trips;
+
+  return filteredTrips;
 };
 
 exports.getTripById = async (tripId) => {

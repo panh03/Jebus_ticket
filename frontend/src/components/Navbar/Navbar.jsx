@@ -1,104 +1,38 @@
-import { useState } from "react";
+import { useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../../context/AuthContext";
+import "./Navbar.css";
 
 const Navbar = () => {
+  const { user, logout } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-  const [open, setOpen] = useState(false);
-
-  const MenuLinks = [
-    { name: "Ticket", link: "#" },
-    { name: "Bus Operators", link: "#" },
-    { name: "Rent a Car", link: "#" },
-    { name: "Promotions", link: "#" },
-  ];
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
-    <div className="bg-white border-b">
-
-      <div className="container flex items-center justify-between py-4">
-
-        {/* LEFT SIDE */}
-        <div className="flex items-center gap-6 lg:gap-10">
-
-          {/* Logo */}
-          <h1 className="text-xl font-bold text-primary">
-            J E B U S
-          </h1>
-
-          {/* Desktop Menu */}
-          <ul className="hidden md:flex items-center gap-6 lg:gap-8 text-gray-700 font-medium">
-            {MenuLinks.map((data, index) => (
-              <li key={index}>
-                <a
-                  href={data.link}
-                  className="hover:text-primary duration-200"
-                >
-                  {data.name}
-                </a>
-              </li>
-            ))}
-          </ul>
-
-        </div>
-
-        {/* RIGHT SIDE */}
-        <div className="flex items-center gap-4 md:gap-6">
-
-          {/* Desktop Login */}
-          <a
-            href="#"
-            className="hidden md:block text-gray-700 font-medium hover:text-primary"
-          >
-            Login
-          </a>
-
-          {/* Desktop Sign Up */}
-          <button className="hidden md:block bg-primary text-white px-5 py-2 rounded-lg font-medium hover:bg-red-600 transition">
-            Sign Up
-          </button>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden text-2xl"
-            onClick={() => setOpen(!open)}
-          >
-            ☰
-          </button>
-
-        </div>
-
+    <nav className="navbar">
+      <div className="container">
+        <Link to="/" className="logo">JEBus<span>Ticket</span></Link>
+        <ul className="nav-links">
+          <li><Link to="/search">Search Trips</Link></li>
+          {user ? (
+            <>
+              <li><Link to="/profile">My Bookings</Link></li>
+              <li><button onClick={handleLogout} className="logout-btn">Logout</button></li>
+              <li className="user-info">Hello, {user.name}</li>
+            </>
+          ) : (
+            <>
+              <li><Link to="/login">Login</Link></li>
+              <li><Link to="/register" className="register-btn">Sign Up</Link></li>
+            </>
+          )}
+        </ul>
       </div>
-
-      {/* Mobile Menu */}
-      {open && (
-        <div className="md:hidden bg-white border-t">
-
-          <ul className="flex flex-col items-center gap-4 py-6 text-gray-700 font-medium">
-
-            {MenuLinks.map((data, index) => (
-              <li key={index}>
-                <a
-                  href={data.link}
-                  className="hover:text-primary"
-                >
-                  {data.name}
-                </a>
-              </li>
-            ))}
-
-            <a href="#" className="hover:text-primary">
-              Login
-            </a>
-
-            <button className="bg-primary text-white px-5 py-2 rounded-lg">
-              Sign Up
-            </button>
-
-          </ul>
-
-        </div>
-      )}
-
-    </div>
+    </nav>
   );
 };
 

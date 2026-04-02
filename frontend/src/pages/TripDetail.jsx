@@ -1,162 +1,91 @@
-import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
-import Navbar from "../components/Navbar/Navbar";
-import Footer from "../components/Footer/Footer";
+import { useState, useEffect, useContext } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
+import { AuthContext } from "../context/AuthContext";
+import "./TripDetail.css";
 
 const TripDetail = () => {
   const { id } = useParams();
-
-  const [trip, setTrip] = useState(null);
+  const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
+  const [seats, setSeats] = useState([]);
   const [selectedSeats, setSelectedSeats] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchTrip = async () => {
-      const res = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/trips/${id}`
-      );
-      setTrip(res.data.data);
+    const fetchSeats = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get(`http://localhost:5000/api/trips/${id}/seats`);
+        setSeats(response.data);
+      } catch (error) {
+        console.error("Error fetching seats:", error);
+      } finally {
+        setLoading(false);
+      }
     };
-
-    fetchTrip();
+    fetchSeats();
   }, [id]);
 
-  if (!trip) return <p className="p-10">Loading...</p>;
-
-  // 👉 chia ghế 2 tầng
-  const lowerSeats = trip.seats.filter(s =>
-    s.seat_number.startsWith("A") || s.seat_number.startsWith("B")
-  );
-
-  const upperSeats = trip.seats.filter(s =>
-    s.seat_number.startsWith("C") || s.seat_number.startsWith("D")
-  );
-
-  // 👉 click chọn ghế
-  const handleSelectSeat = (seat) => {
-    if (seat.status === "booked") return;
-
-    setSelectedSeats(prev => {
-      if (prev.includes(seat.seat_number)) {
-        return prev.filter(s => s !== seat.seat_number);
-      }
-      return [...prev, seat.seat_number];
-    });
+  const toggleSeat = (seatId) => {
+    if (selectedSeats.includes(seatId)) {
+      setSelectedSeats(selectedSeats.filter(s => s !== seatId));
+    } else {
+      setSelectedSeats([...selectedSeats, seatId]);
+    }
   };
 
-  // 👉 style ghế
-  const getSeatClass = (seat) => {
-    if (seat.status === "booked") return "bg-gray-300 cursor-not-allowed";
-    if (selectedSeats.includes(seat.seat_number))
-      return "bg-blue-500 text-white";
-    return "bg-white border";
-  };
+  const handleBooking = async () => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+    if (selectedSeats.length === 0) return alert("Please select at least one seat");
 
-  const total = selectedSeats.length * trip.price;
+    try {
+      const response = await axios.post("http://localhost:5000/api/bookings", {
+        user_id: user.id,
+        trip_instance_id: id,
+        seat_ids: selectedSeats,
+        total_price: 300000 * selectedSeats.length, // Assume 300k per seat
+        payment_method: "VNPAY"
+      });
+      alert("Booking successful!");
+      navigate("/profile");
+    } catch (error) {
+      console.error("Booking error:", error);
+      alert(error.response?.data?.message || "Booking failed");
+    }
+  };
 
   return (
-    <>
-      <Navbar />
-    <div className="bg-gray-50 min-h-screen p-6">
-
-
-      {/* HEADER */}
-      <div className="bg-white rounded-xl p-6 mb-6 flex justify-between">
-        <div>
-          <h2 className="text-xl font-bold">{trip.operator}</h2>
-          <p className="text-gray-500">
-            {trip.from_city} → {trip.to_city}
-          </p>
-        </div>
-
-        <div className="flex gap-10">
-          <div>
-            <p className="text-gray-400 text-sm">DEPARTURE</p>
-            <p className="font-bold">{trip.departure_time}</p>
-          </div>
-
-          <div>
-            <p className="text-gray-400 text-sm">BUS TYPE</p>
-            <p className="font-bold">{trip.bus_type}</p>
-          </div>
+    <div className="trip-detail container">
+      <div className="seat-viewer">
+        <h2>Select Your Seats</h2>
+        <div className="seat-grid">
+          {seats.map(seat => (
+            <div 
+              key={seat.id} 
+              className={`seat ${seat.status} ${selectedSeats.includes(seat.id) ? 'selected' : ''}`}
+              onClick={() => seat.status === 'available' && toggleSeat(seat.id)}
+            >
+              {seat.seat_number}
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="flex gap-6">
-
-        {/* LEFT - SEAT MAP */}
-        <div className="flex-1 bg-white p-6 rounded-xl">
-
-          <h2 className="text-lg font-semibold mb-4">
-            Select Your Seats
-          </h2>
-
-          <div className="flex gap-10">
-
-            {/* LOWER FLOOR */}
-            <div>
-              <p className="text-sm mb-2 font-medium">Lower Floor</p>
-              <div className="grid grid-cols-4 gap-3">
-                {lowerSeats.map(seat => (
-                  <div
-                    key={seat.seat_number}
-                    onClick={() => handleSelectSeat(seat)}
-                    className={`w-12 h-12 flex items-center justify-center rounded-lg cursor-pointer ${getSeatClass(seat)}`}
-                  >
-                    {seat.seat_number}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* UPPER FLOOR */}
-            <div>
-              <p className="text-sm mb-2 font-medium">Upper Floor</p>
-              <div className="grid grid-cols-4 gap-3">
-                {upperSeats.map(seat => (
-                  <div
-                    key={seat.seat_number}
-                    onClick={() => handleSelectSeat(seat)}
-                    className={`w-12 h-12 flex items-center justify-center rounded-lg cursor-pointer ${getSeatClass(seat)}`}
-                  >
-                    {seat.seat_number}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        {/* RIGHT - SUMMARY */}
-        <div className="w-80 bg-white p-6 rounded-xl">
-
-          <h2 className="font-semibold mb-4">Trip Summary</h2>
-
-          <p className="text-gray-500 text-sm">Selected Seats</p>
-          <p className="font-bold mb-4">
-            {selectedSeats.join(", ") || "None"}
-          </p>
-
-          <p className="text-gray-500 text-sm">Price per Seat</p>
-          <p className="mb-4">{trip.price.toLocaleString()} VND</p>
-
-          <hr className="my-4" />
-
-          <p className="text-gray-500 text-sm">TOTAL</p>
-          <p className="text-2xl font-bold text-blue-600">
-            {total.toLocaleString()} VND
-          </p>
-
-          <button className="mt-6 w-full bg-blue-600 text-white py-3 rounded-lg">
-            Continue →
-          </button>
-
-        </div>
+      <div className="booking-summary">
+        <h3>Booking Summary</h3>
+        <p>Selected Seats: <strong>{selectedSeats.length}</strong></p>
+        <p>Price per seat: <strong>300,000 VND</strong></p>
+        <hr />
+        <p className="total">Total: <strong>{(300000 * selectedSeats.length).toLocaleString()} VND</strong></p>
+        <button className="confirm-btn" onClick={handleBooking} disabled={selectedSeats.length === 0}>
+          Confirm Booking
+        </button>
       </div>
     </div>
-    <Footer />
-    </>
   );
 };
 

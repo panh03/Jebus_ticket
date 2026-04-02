@@ -1,0 +1,134 @@
+.search-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem;
+}
+
+.results-header {
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 1.5rem;
+}
+
+.results-header h2 {
+  font-size: 1.875rem;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.results-header h2 span {
+  color: #6366f1;
+}
+
+.date-info {
+  color: #64748b;
+  font-weight: 500;
+  font-size: 1.125rem;
+}
+
+.trips-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.trip-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: box-shadow 0.2s, transform 0.2s;
+  cursor: pointer;
+}
+
+.trip-card:hover {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+}
+
+.loader {
+  padding: 4rem;
+  text-align: center;
+  font-size: 1.25rem;
+  color: #64748b;
+}
+
+.operator {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 0.75rem;
+}
+
+.time-info {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.time-info strong {
+  font-size: 1.125rem;
+  color: #1e293b;
+}
+
+.duration-line {
+  flex: 1;
+  height: 2px;
+  background: #cbd5e1;
+  position: relative;
+  min-width: 100px;
+}
+
+.duration-line::after {
+  content: "Bus";
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.trip-price {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.price {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #6366f1;
+}
+
+.seats-left {
+  font-size: 0.875rem;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.view-btn {
+  background: #1e293b;
+  color: white;
+  text-decoration: none;
+  padding: 0.75rem 2rem;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  transition: opacity 0.2s;
+}
+
+.view-btn:hover {
+  opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+  .trip-card {
+    flex-direction: column;
+    text-align: center;
+    gap: 1.5rem;
+  }
+}

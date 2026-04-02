@@ -1,58 +1,59 @@
-import CityDropdown from "../CityDropdown/CityDropdown";
-import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "./Hero.css";
 
 const Hero = () => {
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [date, setDate] = useState("");
   const navigate = useNavigate();
 
-  const [fromCity, setFromCity] = useState("");
-  const [toCity, setToCity] = useState("");
-  const [date, setDate] = useState("");
-
-  const handleSearch = () => {
-    if (!fromCity || !toCity || !date) {
-      alert("Please fill all fields");
-      return;
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (from && to && date) {
+      navigate(`/search?from=${from}&to=${to}&date=${date}`);
     }
-
-    navigate(
-      `/search?from=${fromCity}&to=${toCity}&date=${date}`
-    );
   };
 
+  const cities = ["Ho Chi Minh", "Da Lat", "Nha Trang"];
+
   return (
-    <div className="bg-white p-4 rounded-xl shadow flex gap-4">
-
-      {/* FROM */}
-      <CityDropdown
-        value={fromCity}
-        onSelect={setFromCity}
-        placeholder="From where?"
-      />
-
-      {/* TO */}
-      <CityDropdown
-        value={toCity}
-        onSelect={setToCity}
-        placeholder="To where?"
-      />
-
-      {/* DATE */}
-      <input
-        type="date"
-        value={date}
-        onChange={(e) => setDate(e.target.value)}
-        className="border p-2 rounded"
-      />
-
-      {/* SEARCH */}
-      <button
-        onClick={handleSearch}
-        className="bg-orange-500 text-white px-4 rounded"
-      >
-        Search
-      </button>
-
+    <div className="hero">
+      <div className="hero-content">
+        <h1>Find Your Perfect Trip</h1>
+        <p>Book bus tickets online with ease and comfort.</p>
+        
+        <form className="search-form" onSubmit={handleSearch}>
+          <div className="input-group">
+            <label>From</label>
+            <select value={from} onChange={(e) => setFrom(e.target.value)} required>
+              <option value="">Select city</option>
+              {cities.map(city => <option key={city} value={city}>{city}</option>)}
+            </select>
+          </div>
+          
+          <div className="input-group">
+            <label>To</label>
+            <select value={to} onChange={(e) => setTo(e.target.value)} required>
+              <option value="">Select city</option>
+              {cities.map(city => <option key={city} value={city}>{city}</option>)}
+            </select>
+          </div>
+          
+          <div className="input-group">
+            <label>Date</label>
+            <input 
+              type="date" 
+              value={date} 
+              onChange={(e) => setDate(e.target.value)} 
+              min={new Date().toISOString().split("T")[0]}
+              required 
+            />
+          </div>
+          
+          <button type="submit" className="search-btn">Search Trips</button>
+        </form>
+      </div>
     </div>
   );
 };
