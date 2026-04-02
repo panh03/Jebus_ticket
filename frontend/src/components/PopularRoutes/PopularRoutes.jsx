@@ -14,10 +14,11 @@ const PopularRoutes = () => {
   }, []);
 
   const fetchPopularRoutes = async () => {
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/trips/popular`);
+    try{
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/trips/popular`)
+      // TODO: Handle data
       const data = await res.json();
-      setRoutes(data);
+      setRoutes(data.data || []);
     } catch (error) {
       console.error("Error fetching routes:", error);
     }
