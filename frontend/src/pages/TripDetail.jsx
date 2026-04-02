@@ -13,7 +13,7 @@ const TripDetail = () => {
   useEffect(() => {
     const fetchTrip = async () => {
       const res = await axios.get(
-        `http://localhost:5000/api/trips/${id}`
+        `${import.meta.env.VITE_API_URL}/api/trips/${id}`
       );
       setTrip(res.data.data);
     };
