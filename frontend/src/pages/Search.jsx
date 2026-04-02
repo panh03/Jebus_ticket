@@ -24,7 +24,7 @@ const Search = () => {
     const fetchTrips = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/trips?from=${from}&to=${to}&date=${date}`
+          `${import.meta.env.VITE_API_URL}/api/trips/search?from=${from}&to=${to}&date=${date}`
         );
 
         console.log("API:", res.data);
