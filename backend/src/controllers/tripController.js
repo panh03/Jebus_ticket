@@ -3,7 +3,6 @@ const tripService = require("../services/tripService");
 exports.searchTrips = async (req, res) => {
   try {
     const { from, to, date } = req.query;
-
     if (!from || !to || !date) {
       return res.status(400).json({
         success: false,
