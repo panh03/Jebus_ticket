@@ -96,6 +96,24 @@
   margin-bottom: 1.25rem;
 }
 
+.auth-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.auth-options a {
+  color: #6366f1;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.auth-options a:hover {
+  text-decoration: underline;
+}
+
 .input-field {
   display: flex;
   flex-direction: column;

@@ -10,6 +10,8 @@ const operatorController = require("../controllers/operatorController");
 // Auth
 router.post("/auth/register", authController.register);
 router.post("/auth/login", authController.login);
+router.post("/auth/forgot-password", authController.forgotPassword);
+router.post("/auth/reset-password", authController.resetPassword);
 
 // Trip Search
 router.get("/trips/search", tripController.search);
