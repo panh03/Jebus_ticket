@@ -13,8 +13,9 @@
   display: flex;
   flex-direction: column;
   padding: 2.5rem 0;
-  position: fixed;
-  height: 100vh;
+  position: sticky;
+  top: 72px;
+  height: calc(100vh - 72px);
   box-shadow: 10px 0 30px -15px rgba(0,0,0,0.03);
   z-index: 50;
 }
@@ -119,7 +120,6 @@
 /* Main Content */
 .dashboard-content {
   flex: 1;
-  margin-left: 280px;
   padding: 3rem;
 }
 
@@ -677,7 +677,7 @@
   .sidebar { width: 80px; }
   .sidebar-header span, .sidebar-nav button span, .user-info, .sidebar-footer { display: none; }
   .sidebar-nav button { justify-content: center; padding: 1.5rem; }
-  .dashboard-content { margin-left: 80px; }
+  .dashboard-content { margin-left: 0; }
 }
 
 .badge-notif {
