@@ -23,7 +23,7 @@ const Search = () => {
     const fetchTrips = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(`http://localhost:5000/api/trips/search?from=${from}&to=${to}&date=${date}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/trips/search?from=${from}&to=${to}&date=${date}`);
         setTrips(response.data);
       } catch (error) {
         console.error("Error fetching trips:", error);

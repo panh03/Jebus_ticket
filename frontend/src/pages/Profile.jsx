@@ -12,7 +12,7 @@ const Profile = () => {
     const fetchBookings = async () => {
       if (!user) return;
       try {
-        const response = await axios.get(`http://localhost:5000/api/bookings/user/${user.id}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/bookings/user/${user.id}`);
         setBookings(response.data);
       } catch (error) {
         console.error("Error fetching bookings:", error);
@@ -66,7 +66,7 @@ const Profile = () => {
               const handleCancel = async (bookingId) => {
                 if (!window.confirm("Are you sure you want to cancel this booking?")) return;
                 try {
-                  await axios.post(`http://localhost:5000/api/bookings/${bookingId}/cancel`);
+                  await axios.post(`${import.meta.env.VITE_API_URL}/api/bookings/${bookingId}/cancel`);
                   alert("Booking cancelled successfully.");
                   window.location.reload();
                 } catch (err) {
@@ -78,7 +78,7 @@ const Profile = () => {
                 const reason = window.prompt("Reason for cancellation?");
                 if (!reason) return;
                 try {
-                  await axios.post(`http://localhost:5000/api/bookings/${bookingId}/cancel-request`, { reason });
+                  await axios.post(`${import.meta.env.VITE_API_URL}/api/bookings/${bookingId}/cancel-request`, { reason });
                   alert("Cancellation request sent to operator.");
                   window.location.reload();
                 } catch (err) {

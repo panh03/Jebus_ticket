@@ -13,7 +13,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/login", { email, password });
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/login`, { email, password });
       login(response.data.user, response.data.token);
       
       // Redirect based on role

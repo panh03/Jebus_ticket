@@ -23,7 +23,7 @@ const Payment = () => {
     const handlePayment = async () => {
         setIsProcessing(true);
         try {
-            const response = await axios.post("http://localhost:5000/api/bookings", {
+            const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/bookings`, {
                 user_id: user.id,
                 trip_instance_id: trip.id,
                 seat_ids: selectedSeatIds,
