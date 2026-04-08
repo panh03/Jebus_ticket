@@ -47,18 +47,19 @@
   border-radius: 1.5rem;
   padding: 2rem;
   position: relative;
-  transition: box-shadow 0.2s;
+  transition: all 0.2s ease;
 }
 
 .booking-card:hover {
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
 }
 
 .booking-status {
   position: absolute;
   top: 1.5rem;
   right: 2rem;
-  background: #10b981;
+  background: #10b981; /* Default for confirmed */
   color: white;
   padding: 0.5rem 1rem;
   border-radius: 9999px;
@@ -67,20 +68,66 @@
   text-transform: uppercase;
 }
 
+.status-cancelled .booking-status {
+  background: #ef4444;
+}
+
+.status-pending .booking-status {
+  background: #f59e0b;
+}
+
 .booking-card h3 {
   font-size: 1.5rem;
   color: #1e293b;
-  margin-bottom: 1rem;
-}
-
-.booking-card p {
-  color: #64748b;
-  font-size: 1.125rem;
   margin-bottom: 0.5rem;
 }
 
-.booking-card p strong {
-  color: #1e293b;
+.route {
+  font-weight: 600;
+  color: #334155 !important;
+}
+
+.cancel-info {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 0.5rem;
+  font-size: 0.9rem !important;
+  color: #64748b !important;
+  border-left: 4px solid #cbd5e1;
+}
+
+.actions {
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.cancel-btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.cancel-btn.primary {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.cancel-btn.primary:hover {
+  background: #fecaca;
+}
+
+.cancel-btn.secondary {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.cancel-btn.secondary:hover {
+  background: #fde68a;
 }
 
 .booking-foot {
@@ -88,6 +135,8 @@
   justify-content: space-between;
   align-items: flex-end;
   margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px dashed #e2e8f0;
 }
 
 .total-paid {

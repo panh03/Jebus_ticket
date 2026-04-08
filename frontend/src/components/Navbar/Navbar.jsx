@@ -20,9 +20,17 @@ const Navbar = () => {
           <li><Link to="/search">Search Trips</Link></li>
           {user ? (
             <>
-              <li><Link to="/profile">My Bookings</Link></li>
+              {user.role === 'operator' && (
+                <li><Link to="/operator/dashboard" className="special-link">Operator Dashboard</Link></li>
+              )}
+              {user.role === 'user' && (
+                <li><Link to="/profile">My Bookings</Link></li>
+              )}
               <li><button onClick={handleLogout} className="logout-btn">Logout</button></li>
-              <li className="user-info">Hello, {user.name}</li>
+              <li className="user-info">
+                 <span className="welcome">Hi, {user.name}</span>
+                 <span className="role-pill">{user.role}</span>
+              </li>
             </>
           ) : (
             <>

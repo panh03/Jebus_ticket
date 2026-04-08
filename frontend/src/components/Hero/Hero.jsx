@@ -25,7 +25,7 @@ const Hero = () => {
         
         <form className="search-form" onSubmit={handleSearch}>
           <div className="input-group">
-            <label>From</label>
+            <label><i className="fas fa-map-marker-alt"></i> From</label>
             <select value={from} onChange={(e) => setFrom(e.target.value)} required>
               <option value="">Select city</option>
               {cities.map(city => <option key={city} value={city}>{city}</option>)}
@@ -33,7 +33,7 @@ const Hero = () => {
           </div>
           
           <div className="input-group">
-            <label>To</label>
+            <label><i className="fas fa-location-arrow"></i> To</label>
             <select value={to} onChange={(e) => setTo(e.target.value)} required>
               <option value="">Select city</option>
               {cities.map(city => <option key={city} value={city}>{city}</option>)}
@@ -41,7 +41,7 @@ const Hero = () => {
           </div>
           
           <div className="input-group">
-            <label>Date</label>
+            <label><i className="fas fa-calendar-day"></i> Date</label>
             <input 
               type="date" 
               value={date} 
@@ -51,7 +51,10 @@ const Hero = () => {
             />
           </div>
           
-          <button type="submit" className="search-btn">Search Trips</button>
+          <button type="submit" className="search-btn">
+            <i className="fas fa-search"></i>
+            Search Trips
+          </button>
         </form>
       </div>
     </div>

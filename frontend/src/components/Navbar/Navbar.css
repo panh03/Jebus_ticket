@@ -65,10 +65,34 @@
 }
 
 .user-info {
-  background: #f1f5f9;
+  background: #f8fafc;
   padding: 0.5rem 1rem;
-  border-radius: 8px;
+  border-radius: 9999px;
   font-size: 0.875rem;
   color: #1e293b;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid #e2e8f0;
+}
+
+.role-pill {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  background: #6366f1;
+  color: white;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.special-link {
+  color: #6366f1 !important;
+  font-weight: 700 !important;
+  border-bottom: 2px solid transparent;
+}
+
+.special-link:hover {
+  border-bottom-color: #6366f1;
 }

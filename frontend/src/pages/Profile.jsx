@@ -42,19 +42,77 @@ const Profile = () => {
           <p>Loading bookings...</p>
         ) : bookings.length > 0 ? (
           <div className="bookings-grid">
-            {bookings.map(booking => (
-              <div key={booking.id} className="booking-card">
-                <div className="booking-status">{booking.status}</div>
-                <h3>{booking.operator_name}</h3>
-                <p>From: <strong>{booking.from_city}</strong> To: <strong>{booking.to_city}</strong></p>
-                <p>Departure: <strong>{new Date(booking.departure_datetime).toLocaleString()}</strong></p>
-                <p>Seats: <strong>{booking.seat_numbers}</strong></p>
-                <div className="booking-foot">
-                  <span className="total-paid">Total: {Number(booking.total_price).toLocaleString()} VND</span>
-                  <span className="booking-id">ID: #{booking.id}</span>
+            {bookings.map(booking => {
+              const departureDate = new Date(booking.departure_datetime);
+              const now = new Date();
+              const diffMs = departureDate - now;
+              const diffHours = diffMs / (1000 * 60 * 60);
+
+              let cancelStatus = 'none'; // 'direct', 'request', 'none'
+              let message = '';
+
+              if (booking.status === 'confirmed') {
+                if (diffHours > 24) {
+                   cancelStatus = 'direct';
+                   message = 'You can cancel this booking for a full refund.';
+                } else if (diffHours > 2) {
+                   cancelStatus = 'request';
+                   message = 'Cancellation within 24h requires operator approval.';
+                } else {
+                   message = 'Cancellation not allowed within 2h of departure.';
+                }
+              }
+
+              const handleCancel = async (bookingId) => {
+                if (!window.confirm("Are you sure you want to cancel this booking?")) return;
+                try {
+                  await axios.post(`http://localhost:5000/api/bookings/${bookingId}/cancel`);
+                  alert("Booking cancelled successfully.");
+                  window.location.reload();
+                } catch (err) {
+                  alert(err.response?.data?.message || "Cancellation failed");
+                }
+              };
+
+              const handleRequestCancel = async (bookingId) => {
+                const reason = window.prompt("Reason for cancellation?");
+                if (!reason) return;
+                try {
+                  await axios.post(`http://localhost:5000/api/bookings/${bookingId}/cancel-request`, { reason });
+                  alert("Cancellation request sent to operator.");
+                  window.location.reload();
+                } catch (err) {
+                  alert(err.response?.data?.message || "Request failed");
+                }
+              };
+
+              return (
+                <div key={booking.id} className={`booking-card status-${booking.status}`}>
+                  <div className="booking-status">{booking.status.toUpperCase()}</div>
+                  <div className="booking-body">
+                    <h3>{booking.operator_name}</h3>
+                    <p className="route">{booking.from_city} &rarr; {booking.to_city}</p>
+                    <p className="time">Departure: {departureDate.toLocaleString()}</p>
+                    <p className="seats">Seats: <strong>{booking.seat_numbers}</strong></p>
+                    
+                    {message && <p className="cancel-info">{message}</p>}
+
+                    <div className="actions">
+                      {cancelStatus === 'direct' && (
+                        <button className="cancel-btn primary" onClick={() => handleCancel(booking.id)}>Cancel Booking</button>
+                      )}
+                      {cancelStatus === 'request' && (
+                        <button className="cancel-btn secondary" onClick={() => handleRequestCancel(booking.id)}>Request Cancel</button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="booking-foot">
+                    <span className="total-paid">{(Number(booking.total_price)).toLocaleString()} VND</span>
+                    <span className="booking-id">ID: #{booking.id}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <p>You haven't made any bookings yet.</p>

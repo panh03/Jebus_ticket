@@ -10,21 +10,26 @@ const TripDetail = () => {
   const { user } = useContext(AuthContext);
   const [seats, setSeats] = useState([]);
   const [selectedSeats, setSelectedSeats] = useState([]);
+  const [trip, setTrip] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchSeats = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await axios.get(`http://localhost:5000/api/trips/${id}/seats`);
-        setSeats(response.data);
+        const [seatsRes, tripRes] = await Promise.all([
+          axios.get(`http://localhost:5000/api/trips/${id}/seats`),
+          axios.get(`http://localhost:5000/api/trips/${id}`)
+        ]);
+        setSeats(seatsRes.data);
+        setTrip(tripRes.data);
       } catch (error) {
-        console.error("Error fetching seats:", error);
+        console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchSeats();
+    fetchData();
   }, [id]);
 
   const toggleSeat = (seatId) => {
@@ -35,27 +40,28 @@ const TripDetail = () => {
     }
   };
 
-  const handleBooking = async () => {
+  const handleConfirmSelection = () => {
     if (!user) {
       navigate("/login");
       return;
     }
     if (selectedSeats.length === 0) return alert("Please select at least one seat");
 
-    try {
-      const response = await axios.post("http://localhost:5000/api/bookings", {
-        user_id: user.id,
-        trip_instance_id: id,
-        seat_ids: selectedSeats,
-        total_price: 300000 * selectedSeats.length, // Assume 300k per seat
-        payment_method: "VNPAY"
-      });
-      alert("Booking successful!");
-      navigate("/profile");
-    } catch (error) {
-      console.error("Booking error:", error);
-      alert(error.response?.data?.message || "Booking failed");
-    }
+    const selectedSeatNumbers = seats
+      .filter(s => selectedSeats.includes(s.id))
+      .map(s => s.seat_number);
+
+    navigate("/booking/confirm", {
+      state: {
+          trip: {
+              ...trip,
+              departure: trip.departure_datetime,
+              arrival: trip.arrival_datetime
+          },
+          selectedSeats: selectedSeatNumbers,
+          selectedSeatIds: selectedSeats
+      }
+    });
   };
 
   return (
@@ -78,12 +84,19 @@ const TripDetail = () => {
       <div className="booking-summary">
         <h3>Booking Summary</h3>
         <p>Selected Seats: <strong>{selectedSeats.length}</strong></p>
-        <p>Price per seat: <strong>300,000 VND</strong></p>
+        <p>Price per seat: <strong>{trip?.price?.toLocaleString() || '---'} VND</strong></p>
         <hr />
-        <p className="total">Total: <strong>{(300000 * selectedSeats.length).toLocaleString()} VND</strong></p>
-        <button className="confirm-btn" onClick={handleBooking} disabled={selectedSeats.length === 0}>
-          Confirm Booking
-        </button>
+        <p className="total">Total: <strong>{((trip?.price || 0) * selectedSeats.length).toLocaleString()} VND</strong></p>
+        {user?.role === 'operator' ? (
+          <div className="operator-warning">
+            <i className="fas fa-exclamation-triangle"></i>
+            <span>Management accounts cannot book tickets. Please use a passenger account.</span>
+          </div>
+        ) : (
+          <button className="confirm-btn" onClick={handleConfirmSelection} disabled={selectedSeats.length === 0}>
+            Confirm Selection
+          </button>
+        )}
       </div>
     </div>
   );

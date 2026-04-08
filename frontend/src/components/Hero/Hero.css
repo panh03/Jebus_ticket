@@ -1,90 +1,193 @@
 .hero {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-  min-height: 80vh;
+  position: relative;
+  min-height: 85vh;
   display: flex;
   justify-content: center;
   align-items: center;
   color: #fff;
   text-align: center;
-  padding: 2rem 1.5rem;
+  padding: 4rem 1.5rem;
+  background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.3)), url('/images/bus_hero.png');
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 15vh;
+  background: linear-gradient(to top, #f8fafc, transparent);
+  pointer-events: none;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 10;
+  max-width: 1200px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .hero-content h1 {
-  font-size: 3.5rem;
-  font-weight: 800;
-  margin-bottom: 1rem;
-  letter-spacing: -0.025em;
+  font-size: clamp(2.5rem, 8vw, 4.5rem);
+  font-weight: 900;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  text-shadow: 0 4px 12px #ffffff;
 }
 
 .hero-content p {
-  font-size: 1.25rem;
-  opacity: 0.9;
-  margin-bottom: 3rem;
+  font-size: clamp(1.1rem, 3vw, 1.5rem);
+  opacity: 0.95;
+  margin-bottom: 4rem;
+  max-width: 700px;
+  font-weight: 500;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .search-form {
   background: white;
-  padding: 1.5rem;
-  border-radius: 1.5rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  padding: 0.75rem;
+  border-radius: 999px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
   display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  max-width: 1000px;
+  align-items: center;
   width: 100%;
+  max-width: 1250px;
+  border: 1px solid #f1f5f9;
+  min-height: 96px;
 }
 
 .input-group {
   flex: 1;
-  min-width: 180px;
+  padding: 0.5rem 1.5rem;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
   text-align: left;
+  border-right: 1px solid #f1f5f9;
+  min-width: 0;
+}
+
+.input-group:last-of-type {
+  border-right: none;
 }
 
 .input-group label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   color: #64748b;
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: 0.8rem;
+  font-weight: 800;
   text-transform: uppercase;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
 }
 
-.input-group select, .input-group input {
-  padding: 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
+.input-group label i {
+  color: #6366f1;
   font-size: 1rem;
-  font-weight: 500;
+}
+
+.input-group select,
+.input-group input {
+  padding: 0.85rem 1.25rem;
+  border: 1px solid transparent;
+  background: #f8fafc;
+  border-radius: 1rem;
+  font-size: 1.25rem;
+  font-weight: 700;
   color: #1e293b;
   outline: none;
-  transition: border-color 0.2s;
+  cursor: pointer;
+  flex: 1;
+  width: 100%;
+  transition: all 0.2s;
+  min-width: 220px;
 }
 
-.input-group select:focus, .input-group input:focus {
+.input-group select:hover,
+.input-group input:hover {
+  background: #f1f5f9;
+  color: #6366f1;
+}
+
+.input-group select:focus,
+.input-group input:focus {
+  background: #ffffff;
   border-color: #6366f1;
 }
 
 .search-btn {
   background: #6366f1;
   color: white;
-  padding: 1rem 2.5rem;
-  border-radius: 0.75rem;
+  padding: 0 3.5rem;
+  height: 72px;
+  border-radius: 999px;
   border: none;
-  font-size: 1.125rem;
-  font-weight: 700;
+  font-size: 1.2rem;
+  font-weight: 800;
   cursor: pointer;
-  transition: transform 0.2s, background 0.2s;
-  align-self: flex-end;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-right: 0.25rem;
+  white-space: nowrap;
 }
 
 .search-btn:hover {
   background: #4f46e5;
   transform: translateY(-2px);
+  box-shadow: 0 15px 30px rgba(99, 102, 241, 0.5);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .search-form {
     flex-direction: column;
+    border-radius: 2rem;
+    padding: 1.5rem;
+    gap: 1.5rem;
+  }
+
+  .input-group {
+    border: none !important;
+    background: #fff;
+    border-radius: 1rem;
+    padding: 1rem;
+    box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05);
+    width: 100%;
+  }
+
+  .search-btn {
+    width: 100%;
+    height: 3.5rem;
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .search-form {
+    grid-template-columns: 1fr;
+  }
+
+  .search-btn {
+    grid-column: span 1;
+  }
+
+  .hero-content h1 {
+    font-size: 2.5rem;
   }
 }

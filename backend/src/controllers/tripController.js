@@ -72,6 +72,8 @@ const tripController = {
           await Promise.all(seatQueries);
         } else {
           instance = instances[0];
+          // Skip if this specific trip instance has been cancelled by the operator
+          if (instance.status === 'cancelled') continue;
         }
 
         // Count available seats
@@ -108,6 +110,29 @@ const tripController = {
       res.json(seats);
     } catch (error) {
       res.status(500).json({ message: "Error fetching seats", error: error.message });
+    }
+  },
+
+  getTripDetail: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const [trips] = await pool.execute(
+        `SELECT ti.*, ts.price, o.name as operator_name, r.from_city as \`from\`, r.to_city as \`to\`
+         FROM trip_instances ti
+         JOIN trip_schedules ts ON ti.schedule_id = ts.id
+         JOIN operators o ON ts.operator_id = o.id
+         JOIN routes r ON ts.route_id = r.id
+         WHERE ti.id = ?`,
+        [id]
+      );
+
+      if (trips.length === 0) {
+        return res.status(404).json({ message: "Trip not found" });
+      }
+
+      res.json(trips[0]);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching trip detail", error: error.message });
     }
   }
 };

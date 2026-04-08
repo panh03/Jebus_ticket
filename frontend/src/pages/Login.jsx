@@ -15,7 +15,13 @@ const Login = () => {
     try {
       const response = await axios.post("http://localhost:5000/api/auth/login", { email, password });
       login(response.data.user, response.data.token);
-      navigate("/");
+      
+      // Redirect based on role
+      if (response.data.user.role === 'operator') {
+        navigate("/operator/dashboard");
+      } else {
+        navigate("/");
+      }
     } catch (error) {
       alert("Login failed: " + (error.response?.data?.message || "Something went wrong"));
     }
@@ -23,22 +29,49 @@ const Login = () => {
 
   return (
     <div className="auth-page">
-      <div className="auth-card">
-        <h2>Welcome Back</h2>
-        <p>Login to your JEBus Ticket account</p>
-        <form onSubmit={handleSubmit}>
+      <div className="auth-card animate-fade-in">
+        <header className="auth-header">
+          <h2>Welcome Back</h2>
+          <p>Sign in to continue your journey</p>
+        </header>
+
+        <form onSubmit={handleSubmit} className="auth-form">
           <div className="input-field">
-            <label>Email Address</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <label><i className="fas fa-envelope"></i> Email Address</label>
+            <input 
+              type="email" 
+              placeholder="name@example.com"
+              value={email} 
+              onChange={(e) => setEmail(e.target.value)} 
+              required 
+            />
           </div>
+          
           <div className="input-field">
-            <label>Password</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <label><i className="fas fa-lock"></i> Password</label>
+            <input 
+              type="password" 
+              placeholder="••••••••"
+              value={password} 
+              onChange={(e) => setPassword(e.target.value)} 
+              required 
+            />
           </div>
-          <button type="submit" className="auth-btn">Login</button>
+
+          <div className="auth-options">
+            <label className="remember-me">
+              <input type="checkbox" /> <span>Remember me</span>
+            </label>
+            <Link to="/forgot-password">Forgot password?</Link>
+          </div>
+
+          <button type="submit" className="auth-btn">
+            Login <i className="fas fa-sign-in-alt"></i>
+          </button>
         </form>
+
         <p className="auth-footer">
-          Don't have an account? <Link to="/register">Create one</Link>
+          Don't have an account? <Link to="/register">Register now</Link>
         </p>
       </div>
     </div>
