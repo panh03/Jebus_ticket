@@ -88,6 +88,7 @@ const Search = () => {
                 <div key={trip.id} className="trip-card">
                   <div className="trip-info">
                     <p className="operator">{trip.operator}</p>
+                    <p className="bus-info">{trip.bus_info || 'Sleeper'}</p>
                     <div className="time-info">
                       <div className="time">
                         <strong>{new Date(trip.departure).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</strong>

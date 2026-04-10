@@ -1,12 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import "./Hero.css";
 
 const Hero = () => {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [date, setDate] = useState("");
+  const [cities, setCities] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/trips/cities`);
+        setCities(res.data);
+      } catch (err) {
+        console.error("Error fetching cities:", err);
+      }
+    };
+    fetchCities();
+  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -14,8 +28,6 @@ const Hero = () => {
       navigate(`/search?from=${from}&to=${to}&date=${date}`);
     }
   };
-
-  const cities = ["Ho Chi Minh", "Da Lat", "Nha Trang"];
 
   return (
     <div className="hero">

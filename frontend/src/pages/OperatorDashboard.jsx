@@ -14,6 +14,22 @@ const OperatorDashboard = () => {
    const [selectedRoute, setSelectedRoute] = useState(null);
    const [isLoading, setIsLoading] = useState(true);
 
+   // Modal & Form States
+   const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
+   const [isTripModalOpen, setIsTripModalOpen] = useState(false);
+   const [routeForm, setRouteForm] = useState({
+      from_city: "", to_city: "", distance: "", duration: "", base_price: "", is_active: true
+   });
+   const [tripForm, setTripForm] = useState({
+      route_id: "", bus_info: "", capacity: 36, departs_at: "", arrives_at: "", price_multiplier: 1.0, status: "scheduled"
+   });
+
+   // Helper for auth headers
+   const getAuthHeader = () => {
+      const token = localStorage.getItem("token");
+      return { headers: { Authorization: `Bearer ${token}` } };
+   };
+
    useEffect(() => {
       fetchAllData();
    }, []);
@@ -24,9 +40,15 @@ const OperatorDashboard = () => {
 
    const fetchAllData = async () => {
       try {
-         const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/operator/trips`);
-         setTrips(res.data);
-      } catch (err) { console.error(err); }
+         const [tripsRes, routesRes] = await Promise.all([
+            axios.get(`${import.meta.env.VITE_API_URL}/api/operator/trips`, getAuthHeader()),
+            axios.get(`${import.meta.env.VITE_API_URL}/api/operator/routes`, getAuthHeader())
+         ]);
+         setTrips(tripsRes.data);
+         setRoutes(routesRes.data);
+      } catch (err) { 
+         console.error("Error fetching operations data:", err); 
+      }
    }
 
    const fetchActiveTabData = async () => {
@@ -36,16 +58,16 @@ const OperatorDashboard = () => {
             const url = selectedRoute
                ? `${import.meta.env.VITE_API_URL}/api/operator/trips?routeId=${selectedRoute.id}`
                : `${import.meta.env.VITE_API_URL}/api/operator/trips`;
-            const res = await axios.get(url);
+            const res = await axios.get(url, getAuthHeader());
             setTrips(res.data);
          } else if (activeTab === "routes") {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/operator/routes`);
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/operator/routes`, getAuthHeader());
             setRoutes(res.data);
          } else if (activeTab === "promotions") {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/operator/promotions`);
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/operator/promotions`, getAuthHeader());
             setPromotions(res.data);
          } else if (activeTab === "requests") {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/operator/cancellations`);
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/operator/cancellations`, getAuthHeader());
             setRequests(res.data);
          }
       } catch (err) {
@@ -57,7 +79,7 @@ const OperatorDashboard = () => {
 
    const updateTripStatus = async (tripId, newStatus) => {
       try {
-         await axios.put(`${import.meta.env.VITE_API_URL}/api/operator/trips/${tripId}/status`, { status: newStatus });
+         await axios.put(`${import.meta.env.VITE_API_URL}/api/operator/trips/${tripId}/status`, { status: newStatus }, getAuthHeader());
          fetchActiveTabData();
       } catch (err) {
          alert("Failed to update status");
@@ -66,7 +88,7 @@ const OperatorDashboard = () => {
 
    const processCancellation = async (requestId, status) => {
       try {
-         await axios.put(`${import.meta.env.VITE_API_URL}/api/operator/cancellations/${requestId}`, { status });
+         await axios.put(`${import.meta.env.VITE_API_URL}/api/operator/cancellations/${requestId}`, { status }, getAuthHeader());
          alert(`Request ${status} successfully`);
          fetchActiveTabData();
       } catch (err) {
@@ -88,8 +110,8 @@ const OperatorDashboard = () => {
       setIsLoading(true);
       try {
          const [passRes, seatsRes] = await Promise.all([
-            axios.get(`${import.meta.env.VITE_API_URL}/api/operator/trips/${instanceId}/passengers`),
-            axios.get(`${import.meta.env.VITE_API_URL}/api/operator/trips/${instanceId}/seats`)
+            axios.get(`${import.meta.env.VITE_API_URL}/api/operator/trips/${instanceId}/passengers`, getAuthHeader()),
+            axios.get(`${import.meta.env.VITE_API_URL}/api/operator/trips/${instanceId}/seats`, getAuthHeader())
          ]);
 
          setSelectedTripDetails({
@@ -103,6 +125,35 @@ const OperatorDashboard = () => {
       } finally {
          setIsLoading(false);
       }
+   };
+
+   const handleAddRoute = async (e) => {
+      e.preventDefault();
+      try {
+         await axios.post(`${import.meta.env.VITE_API_URL}/api/operator/routes`, routeForm, getAuthHeader());
+         setIsRouteModalOpen(false);
+         setRouteForm({ from_city: "", to_city: "", distance: "", duration: "", base_price: "", is_active: true });
+         fetchActiveTabData();
+      } catch (err) { alert("Failed to add route"); }
+   };
+
+   const handleAddTrip = async (e) => {
+      e.preventDefault();
+      try {
+         await axios.post(`${import.meta.env.VITE_API_URL}/api/operator/trips`, tripForm, getAuthHeader());
+         setIsTripModalOpen(false);
+         fetchActiveTabData();
+      } catch (err) { alert("Failed to add trip: " + (err.response?.data?.message || err.message)); }
+   };
+
+   const openTripModal = (preSelectRoute = null) => {
+      setTripForm(prev => ({
+         ...prev,
+         route_id: preSelectRoute?.id || selectedRoute?.id || "",
+         bus_info: "",
+         capacity: 36
+      }));
+      setIsTripModalOpen(true);
    };
 
    return (
@@ -176,19 +227,26 @@ const OperatorDashboard = () => {
                <div className="tab-pane">
                   {activeTab === "trips" && (
                      <div className="table-container animate-fade-in">
+                        <div className="add-trip-floating">
+                           <button className="add-promo-btn" onClick={() => openTripModal()}>
+                              <i className="fas fa-plus"></i> New Trip Run
+                           </button>
+                        </div>
                         <table className="dashboard-table">
                            <thead>
-                              <tr>
+                               <tr>
                                  <th>Route</th>
+                                 <th>Bus Info</th>
                                  <th>Departure Date</th>
                                  <th>Time Range</th>
+                                 <th>Price (Final)</th>
                                  <th>Status</th>
                                  <th>Actions</th>
                               </tr>
                            </thead>
                            <tbody>
                               {trips.length === 0 ? (
-                                 <tr><td colSpan="5" className="empty-row text-center">No runs found for this selection</td></tr>
+                                 <tr><td colSpan="7" className="empty-row text-center">No runs found for this selection</td></tr>
                               ) : (
                                  trips.map(trip => (
                                     <tr key={trip.id} className={trip.status === 'cancelled' ? 'is-disabled' : ''}>
@@ -197,6 +255,12 @@ const OperatorDashboard = () => {
                                              <strong>{trip.from_city}</strong>
                                              <i className="fas fa-arrow-right"></i>
                                              <strong>{trip.to_city}</strong>
+                                          </div>
+                                       </td>
+                                       <td>
+                                          <div className="bus-info-cell">
+                                             <span className="info-text">{trip.bus_info || 'Manual Entry'}</span>
+                                             <span className="cap">{trip.capacity} seats</span>
                                           </div>
                                        </td>
                                        <td>{new Date(trip.departure_datetime).toLocaleDateString()}</td>
@@ -208,12 +272,15 @@ const OperatorDashboard = () => {
                                           </div>
                                        </td>
                                        <td>
+                                          <strong>{(trip.price * (trip.price_multiplier || 1)).toLocaleString()} VND</strong>
+                                       </td>
+                                       <td>
                                           <span className={`status-badge ${trip.status}`}>{trip.status}</span>
                                        </td>
                                        <td>
                                           <div className="action-btns">
                                              <button className="view-btn green" onClick={() => viewTripDetails(trip.id)}>
-                                                <i className="fas fa-list-alt"></i> Passengers & Seats
+                                                <i className="fas fa-list-alt"></i> Details
                                              </button>
                                              <select
                                                 className="status-select"
@@ -224,6 +291,7 @@ const OperatorDashboard = () => {
                                                 <option value="on_time">On Time</option>
                                                 <option value="delayed">Delayed</option>
                                                 <option value="cancelled">Cancelled</option>
+                                                <option value="completed">Completed</option>
                                              </select>
                                           </div>
                                        </td>
@@ -235,20 +303,80 @@ const OperatorDashboard = () => {
                   )}
 
                   {activeTab === "routes" && (
-                     <div className="routes-grid animate-fade-in">
-                        {routes.map(route => (
-                           <div className="route-card clickable" key={route.id} onClick={() => handleRouteClick(route)}>
-                              <div className="route-card-header">
-                                 <span className="route-id">Route #{route.id}</span>
-                                 <span className="dist">{route.distance} km</span>
-                              </div>
-                              <h3>{route.from_city} &rarr; {route.to_city}</h3>
-                              <p><i className="fas fa-clock"></i> Est. Time: {route.duration}</p>
-                              <div className="card-footer">
-                                 <span>Click to view runs &rarr;</span>
-                              </div>
-                           </div>
-                        ))}
+                     <div className="routes-management animate-fade-in">
+                        <header className="list-header" style={{ marginBottom: '2rem' }}>
+                           <h3>Route Master List</h3>
+                           <button className="add-promo-btn" onClick={() => setIsRouteModalOpen(true)}>
+                              <i className="fas fa-plus"></i> Add New Route
+                           </button>
+                        </header>
+
+                        <div className="split-layout">
+                           <aside className="master-panel">
+                              {routes.map(route => (
+                                 <div
+                                    key={route.id}
+                                    className={`route-item ${selectedRoute?.id === route.id ? 'selected' : ''}`}
+                                    onClick={() => handleRouteClick(route)}
+                                 >
+                                    <div className="route-item-header">
+                                       <span className="id">Route #{route.id}</span>
+                                       <span className="price">{Number(route.base_price || 0).toLocaleString()} VND</span>
+                                    </div>
+                                    <h4>{route.from_city} &rarr; {route.to_city}</h4>
+                                    <div className="route-meta" style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.5rem' }}>
+                                       <span><i className="fas fa-road"></i> {route.distance} km</span> &bull; 
+                                       <span><i className="fas fa-clock"></i> {route.duration}</span>
+                                    </div>
+                                 </div>
+                              ))}
+                           </aside>
+
+                           <main className="detail-panel">
+                              {selectedRoute ? (
+                                 <div className="route-detail-content">
+                                    <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                       <h3>Trips for {selectedRoute.from_city} &rarr; {selectedRoute.to_city}</h3>
+                                       <button className="add-btn-sm" onClick={() => openTripModal(selectedRoute)}>
+                                          <i className="fas fa-plus"></i> Add Trip Run
+                                       </button>
+                                    </header>
+
+                                    <table className="dashboard-table" style={{ marginTop: 0 }}>
+                                       <thead>
+                                          <tr>
+                                             <th>Date</th>
+                                             <th>Status</th>
+                                             <th>Actions</th>
+                                          </tr>
+                                       </thead>
+                                       <tbody>
+                                          {trips.length === 0 ? (
+                                             <tr><td colSpan="3" className="empty-row text-center">No trips scheduled for this route</td></tr>
+                                          ) : (
+                                             trips.map(trip => (
+                                                <tr key={trip.id}>
+                                                   <td>{new Date(trip.departure_datetime).toLocaleString()}</td>
+                                                   <td><span className={`status-badge ${trip.status}`}>{trip.status}</span></td>
+                                                   <td>
+                                                      <button className="view-btn green" onClick={() => viewTripDetails(trip.id)}>
+                                                         View
+                                                      </button>
+                                                   </td>
+                                                </tr>
+                                             ))
+                                          )}
+                                       </tbody>
+                                    </table>
+                                 </div>
+                              ) : (
+                                 <div className="empty-state">
+                                    <i className="fas fa-map-marked-alt"></i>
+                                    <p>Select a route from the left to view and manage its trips</p>
+                                 </div>
+                              )}
+                           </main>
+                        </div>
                      </div>
                   )}
 
@@ -382,6 +510,132 @@ const OperatorDashboard = () => {
                </div>
             )}
          </main>
+
+         {/* Add Route Modal */}
+         {isRouteModalOpen && (
+            <div className="modal-overlay">
+               <div className="modal-content">
+                  <div className="modal-header">
+                     <h2>Create New Route</h2>
+                     <button className="close-modal" onClick={() => setIsRouteModalOpen(false)}>&times;</button>
+                  </div>
+                  <form onSubmit={handleAddRoute}>
+                     <div className="modal-body">
+                        <div className="form-row">
+                           <div className="form-group">
+                              <label>Origin City</label>
+                              <input type="text" className="form-input" required 
+                                 value={routeForm.from_city} onChange={e => setRouteForm({...routeForm, from_city: e.target.value})} />
+                           </div>
+                           <div className="form-group">
+                              <label>Destination City</label>
+                              <input type="text" className="form-input" required 
+                                 value={routeForm.to_city} onChange={e => setRouteForm({...routeForm, to_city: e.target.value})} />
+                           </div>
+                        </div>
+                        <div className="form-row">
+                           <div className="form-group">
+                              <label>Distance (km)</label>
+                              <input type="number" className="form-input" required 
+                                 value={routeForm.distance} onChange={e => setRouteForm({...routeForm, distance: e.target.value})} />
+                           </div>
+                           <div className="form-group">
+                              <label>Duration (e.g., 6 hours)</label>
+                              <input type="text" className="form-input" required 
+                                 value={routeForm.duration} onChange={e => setRouteForm({...routeForm, duration: e.target.value})} />
+                           </div>
+                        </div>
+                        <div className="form-group">
+                           <label>Base Price (VND)</label>
+                           <input type="number" className="form-input" required 
+                              value={routeForm.base_price} onChange={e => setRouteForm({...routeForm, base_price: e.target.value})} />
+                        </div>
+                        <div className="form-group">
+                           <label className="form-checkbox">
+                              <input type="checkbox" checked={routeForm.is_active} 
+                                 onChange={e => setRouteForm({...routeForm, is_active: e.target.checked})} />
+                              Route is active and visible
+                           </label>
+                        </div>
+                     </div>
+                     <div className="modal-footer">
+                        <button type="button" className="cancel-btn" onClick={() => setIsRouteModalOpen(false)}>Cancel</button>
+                        <button type="submit" className="save-btn">Create Route</button>
+                     </div>
+                  </form>
+               </div>
+            </div>
+         )}
+
+         {/* Add Trip Modal */}
+         {isTripModalOpen && (
+            <div className="modal-overlay">
+               <div className="modal-content">
+                  <div className="modal-header">
+                     <h2>Schedule New Trip</h2>
+                     <button className="close-modal" onClick={() => setIsTripModalOpen(false)}>&times;</button>
+                  </div>
+                  <form onSubmit={handleAddTrip}>
+                     <div className="modal-body">
+                        <div className="form-group">
+                           <label>Select Route</label>
+                           <select className="form-select" required value={tripForm.route_id}
+                              onChange={e => setTripForm({...tripForm, route_id: e.target.value})}>
+                              <option value="">-- Choose a Route --</option>
+                              {routes.map(r => (
+                                 <option key={r.id} value={r.id}>{r.from_city} &rarr; {r.to_city}</option>
+                              ))}
+                           </select>
+                        </div>
+                        <div className="form-row">
+                           <div className="form-group">
+                              <label>Bus Info (Plate / Type)</label>
+                              <input type="text" className="form-input" placeholder="e.g. 51B-12345 (Sleeper)" required 
+                                 value={tripForm.bus_info} onChange={e => setTripForm({...tripForm, bus_info: e.target.value})} />
+                           </div>
+                           <div className="form-group">
+                              <label>Bus Capacity</label>
+                              <input type="number" className="form-input" required 
+                                 value={tripForm.capacity} onChange={e => setTripForm({...tripForm, capacity: e.target.value})} />
+                           </div>
+                        </div>
+                        <div className="form-row">
+                           <div className="form-group">
+                              <label>Departure Time</label>
+                              <input type="datetime-local" className="form-input" required 
+                                 value={tripForm.departs_at} onChange={e => setTripForm({...tripForm, departs_at: e.target.value})} />
+                           </div>
+                           <div className="form-group">
+                              <label>Arrival Time</label>
+                              <input type="datetime-local" className="form-input" required 
+                                 value={tripForm.arrives_at} onChange={e => setTripForm({...tripForm, arrives_at: e.target.value})} />
+                           </div>
+                        </div>
+                        <div className="form-row">
+                           <div className="form-group">
+                              <label>Price Multiplier</label>
+                              <input type="number" step="0.1" className="form-input" required 
+                                 value={tripForm.price_multiplier} onChange={e => setTripForm({...tripForm, price_multiplier: e.target.value})} />
+                           </div>
+                           <div className="form-group">
+                              <label>Initial Status</label>
+                              <select className="form-select" value={tripForm.status}
+                                 onChange={e => setTripForm({...tripForm, status: e.target.value})}>
+                                 <option value="scheduled">Scheduled</option>
+                                 <option value="on_time">On Time</option>
+                                 <option value="delayed">Delayed</option>
+                              </select>
+                           </div>
+                        </div>
+                     </div>
+                     <div className="modal-footer">
+                        <button type="button" className="cancel-btn" onClick={() => setIsTripModalOpen(false)}>Cancel</button>
+                        <button type="submit" className="save-btn">Launch Trip</button>
+                     </div>
+                  </form>
+               </div>
+            </div>
+         )}
       </div>
    );
 };

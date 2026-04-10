@@ -4,13 +4,25 @@ const operatorController = {
   // Get the operator_id linked to the current user
   getOperatorId: async (userId) => {
     const [rows] = await pool.execute("SELECT id FROM operators WHERE user_id = ?", [userId]);
-    return rows[0]?.id;
+    if (rows.length > 0) return rows[0].id;
+
+    // Auto-create operator profile if user has 'operator' role
+    const [user] = await pool.execute("SELECT name, email, role FROM users WHERE id = ?", [userId]);
+    if (user.length > 0 && user[0].role === 'operator') {
+       const [result] = await pool.execute(
+         "INSERT INTO operators (user_id, name, contact_email) VALUES (?, ?, ?)",
+         [userId, user[0].name, user[0].email]
+       );
+       return result.insertId;
+    }
+    return null;
   },
 
   // 1. Promotions
   getPromotions: async (req, res) => {
     try {
       const opId = await operatorController.getOperatorId(req.user.id);
+      if (!opId) return res.status(403).json({ message: "Operator profile not found" });
       const [rows] = await pool.execute("SELECT * FROM promotions WHERE operator_id = ?", [opId]);
       res.json(rows);
     } catch (error) {
@@ -36,6 +48,7 @@ const operatorController = {
   getTrips: async (req, res) => {
     try {
       const opId = await operatorController.getOperatorId(req.user.id);
+      if (!opId) return res.status(403).json({ message: "Operator profile not found" });
       const { routeId } = req.query;
       
       let query = `
@@ -75,7 +88,9 @@ const operatorController = {
   // 3. Route Management (Can view available routes or request new ones - simplifying for now)
   getRoutes: async (req, res) => {
     try {
-      const [rows] = await pool.execute("SELECT * FROM routes");
+      const opId = await operatorController.getOperatorId(req.user.id);
+      // If opId is missing but role is operator, show at least global routes
+      const [rows] = await pool.execute("SELECT * FROM routes WHERE operator_id IS NULL OR operator_id = ? ORDER BY created_at DESC", [opId || 0]);
       res.json(rows);
     } catch (error) {
       res.status(500).json({ message: "Error fetching routes", error: error.message });
@@ -222,6 +237,81 @@ const operatorController = {
     } catch (error) {
       await connection.rollback();
       res.status(500).json({ message: error.message });
+    } finally {
+      connection.release();
+    }
+  },
+
+  // 8. Create Route
+  createRoute: async (req, res) => {
+    try {
+      const opId = await operatorController.getOperatorId(req.user.id);
+      const { from_city, to_city, distance, duration, base_price, is_active } = req.body;
+      
+      const [result] = await pool.execute(
+        "INSERT INTO routes (from_city, to_city, distance, duration, operator_id, base_price, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [from_city, to_city, distance, duration, opId, base_price, is_active ?? true]
+      );
+      
+      res.status(201).json({ message: "Route created", id: result.insertId });
+    } catch (error) {
+      res.status(500).json({ message: "Error creating route", error: error.message });
+    }
+  },
+
+  // 9. Create Trip
+  createTrip: async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const opId = await operatorController.getOperatorId(req.user.id);
+      let { route_id, bus_info, capacity, departs_at, arrives_at, price_multiplier, status } = req.body;
+
+      // First, we need a schedule_id to link trip_instance. 
+      let [schedules] = await connection.execute(
+        "SELECT id FROM trip_schedules WHERE route_id = ? AND operator_id = ? LIMIT 1",
+        [route_id, opId]
+      );
+
+      let scheduleId;
+      if (schedules.length === 0) {
+        // Create a phantom schedule
+        const [route] = await connection.execute("SELECT from_city, to_city, base_price FROM routes WHERE id = ?", [route_id]);
+        if (route.length === 0) throw new Error("Route not found");
+
+        const departTime = departs_at.split('T')[1]?.substring(0, 8) || '00:00:00';
+        const arriveTime = arrives_at.split('T')[1]?.substring(0, 8) || '00:00:00';
+
+        const [schedResult] = await connection.execute(
+          "INSERT INTO trip_schedules (route_id, operator_id, departure_time, arrival_time, price, days_of_week) VALUES (?, ?, ?, ?, ?, ?)",
+          [route_id, opId, departTime, arriveTime, route[0].base_price, ''] // Empty string for days means not repeating
+        );
+        scheduleId = schedResult.insertId;
+      } else {
+        scheduleId = schedules[0].id;
+      }
+
+      // Create Trip Instance
+      const [tripResult] = await connection.execute(
+        "INSERT INTO trip_instances (schedule_id, departure_datetime, arrival_datetime, status, bus_info, capacity, price_multiplier) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [scheduleId, departs_at, arrives_at, status || 'scheduled', bus_info || 'Unknown Bus', capacity || 36, price_multiplier || 1.0]
+      );
+      const tripId = tripResult.insertId;
+
+      // Initialize Seats based on provided capacity
+      const finalCapacity = capacity || 36;
+      for (let i = 1; i <= finalCapacity; i++) {
+        const row = Math.ceil(i / 2);
+        const col = i % 2 === 1 ? 'A' : 'B';
+        const seatNum = `${col}${row}`;
+        await connection.execute("INSERT INTO seats (trip_instance_id, seat_number, status) VALUES (?, ?, 'available')", [tripId, seatNum]);
+      }
+
+      await connection.commit();
+      res.status(201).json({ message: "Trip created", id: tripId });
+    } catch (error) {
+      await connection.rollback();
+      res.status(500).json({ message: "Error creating trip", error: error.message });
     } finally {
       connection.release();
     }
