@@ -3,19 +3,25 @@ const pool = require("../config/database");
 const operatorController = {
   // Get the operator_id linked to the current user
   getOperatorId: async (userId) => {
-    const [rows] = await pool.execute("SELECT id FROM operators WHERE user_id = ?", [userId]);
-    if (rows.length > 0) return rows[0].id;
+    if (!userId) return null;
+    try {
+      const [rows] = await pool.execute("SELECT id FROM operators WHERE user_id = ?", [userId]);
+      if (rows.length > 0) return rows[0].id;
 
-    // Auto-create operator profile if user has 'operator' role
-    const [user] = await pool.execute("SELECT name, email, role FROM users WHERE id = ?", [userId]);
-    if (user.length > 0 && user[0].role === 'operator') {
-       const [result] = await pool.execute(
-         "INSERT INTO operators (user_id, name, contact_email) VALUES (?, ?, ?)",
-         [userId, user[0].name, user[0].email]
-       );
-       return result.insertId;
+      // Auto-create operator profile if user has 'operator' role
+      const [user] = await pool.execute("SELECT name, email, role FROM users WHERE id = ?", [userId]);
+      if (user.length > 0 && user[0].role === 'operator') {
+         const [result] = await pool.execute(
+           "INSERT INTO operators (user_id, name, contact_email) VALUES (?, ?, ?)",
+           [userId, user[0].name, user[0].email]
+         );
+         return result.insertId;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error in getOperatorId:", error);
+      return null;
     }
-    return null;
   },
 
   // 1. Promotions
@@ -70,6 +76,7 @@ const operatorController = {
       const [rows] = await pool.execute(query, params);
       res.json(rows);
     } catch (error) {
+      console.error("Error fetching trips:", error);
       res.status(500).json({ message: "Error fetching trips", error: error.message });
     }
   },
@@ -114,6 +121,7 @@ const operatorController = {
       `, [instanceId]);
       res.json(rows);
     } catch (error) {
+      console.error("Error fetching passengers:", error);
       res.status(500).json({ message: "Error fetching passengers", error: error.message });
     }
   },
@@ -139,6 +147,7 @@ const operatorController = {
       `, [instanceId]);
       res.json(rows);
     } catch (error) {
+      console.error("Error fetching seats:", error);
       res.status(500).json({ message: "Error fetching seats", error: error.message });
     }
   },
