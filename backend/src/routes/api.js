@@ -4,7 +4,7 @@ const authController = require("../controllers/authController");
 const tripController = require("../controllers/tripController");
 const bookingController = require("../controllers/bookingController");
 
-const { authMiddleware, isOperator } = require("../middleware/authMiddleware");
+const { authMiddleware, isOperator, optionalAuth } = require("../middleware/authMiddleware");
 const operatorController = require("../controllers/operatorController");
 
 // Auth
@@ -16,6 +16,10 @@ router.post("/auth/reset-password", authController.resetPassword);
 // Trip Search
 router.get("/trips/search", tripController.search);
 router.get("/trips/cities", tripController.getCities);
+router.get("/trips/popular", tripController.getPopularRoutes);
+router.get("/trips/history", optionalAuth, tripController.getSearchHistory);
+router.post("/trips/history", optionalAuth, tripController.saveSearch);
+router.get("/trips/verify-route", tripController.verifyRoute);
 router.get("/trips/:id", tripController.getTripDetail);
 router.get("/trips/:instanceId/seats", tripController.getSeats);
 

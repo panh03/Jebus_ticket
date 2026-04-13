@@ -26,4 +26,18 @@ const isOperator = (req, res, next) => {
   }
 };
 
-module.exports = { authMiddleware, isOperator };
+const optionalAuth = (req, res, next) => {
+  const token = req.headers["authorization"]?.split(" ")[1];
+  if (!token) {
+    return next();
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET || "supersecretkey", (err, decoded) => {
+    if (!err) {
+      req.user = decoded;
+    }
+    next();
+  });
+};
+
+module.exports = { authMiddleware, isOperator, optionalAuth };

@@ -162,6 +162,76 @@ const tripController = {
     } catch (error) {
       res.status(500).json({ message: "Error fetching cities", error: error.message });
     }
+  },
+
+  getPopularRoutes: async (req, res) => {
+    try {
+      // Logic: Pick routes that have the most successful bookings
+      // Fallback: Pick any active routes if no bookings yet
+      const [rows] = await pool.execute(`
+        SELECT r.id, r.from_city, r.to_city, r.base_price, COUNT(b.id) as booking_count
+        FROM routes r
+        LEFT JOIN trip_schedules ts ON r.id = ts.route_id
+        LEFT JOIN trip_instances ti ON ts.id = ti.schedule_id
+        LEFT JOIN bookings b ON ti.id = b.trip_instance_id
+        WHERE r.is_active = 1
+        GROUP BY r.id, r.from_city, r.to_city, r.base_price
+        ORDER BY booking_count DESC, r.id ASC
+        LIMIT 3
+      `);
+      res.json(rows);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching popular routes", error: error.message });
+    }
+  },
+
+  getSearchHistory: async (req, res) => {
+    try {
+      if (!req.user) return res.json([]);
+      
+      const [rows] = await pool.execute(`
+        SELECT sh.from_city, sh.to_city, sh.search_count 
+        FROM search_history sh
+        JOIN routes r ON sh.from_city = r.from_city AND sh.to_city = r.to_city
+        WHERE sh.user_id = ? AND r.is_active = 1
+        GROUP BY sh.from_city, sh.to_city, sh.search_count, sh.last_searched_at
+        ORDER BY sh.last_searched_at DESC 
+        LIMIT 5
+      `, [req.user.id]);
+      res.json(rows);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching search history", error: error.message });
+    }
+  },
+
+  saveSearch: async (req, res) => {
+    try {
+      const { from, to } = req.body;
+      if (!req.user || !from || !to) return res.status(200).json({ message: "Search processed (guest or missing data)" });
+
+      await pool.execute(
+        "INSERT INTO search_history (user_id, from_city, to_city, search_count) VALUES (?, ?, ?, 1) ON DUPLICATE KEY UPDATE search_count = search_count + 1",
+        [req.user.id, from, to]
+      );
+      res.json({ message: "Search history updated" });
+    } catch (error) {
+       // We don't want to break the search flow if history saving fails
+       console.error("Error saving search history:", error);
+       res.status(200).json({ message: "Search processed with history error" });
+    }
+  },
+
+  verifyRoute: async (req, res) => {
+    try {
+      const { from, to } = req.query;
+      const [rows] = await pool.execute(
+        "SELECT id FROM routes WHERE from_city = ? AND to_city = ? AND is_active = 1",
+        [from, to]
+      );
+      res.json({ active: rows.length > 0 });
+    } catch (error) {
+      res.status(500).json({ message: "Error verifying route", error: error.message });
+    }
   }
 };
 
