@@ -162,9 +162,16 @@ const operatorController = {
   getRoutes: async (req, res) => {
     try {
       const opId = await operatorController.getOperatorId(req.user.id);
-      // If opId is missing but role is operator, show at least global routes
-      const [rows] = await pool.execute("SELECT * FROM routes WHERE operator_id IS NULL OR operator_id = ? ORDER BY created_at DESC", [opId || 0]);
-      res.json(rows);
+      const [routes] = await pool.execute(`
+        SELECT r.*, 
+               (SELECT COUNT(*) FROM trip_instances ti 
+                JOIN trip_schedules ts ON ti.schedule_id = ts.id 
+                WHERE ts.route_id = r.id AND ti.status NOT IN ('completed', 'cancelled')) as active_trips
+        FROM routes r 
+        WHERE r.operator_id = ? OR r.operator_id IS NULL
+        ORDER BY r.created_at DESC
+      `, [opId]);
+      res.json(routes);
     } catch (error) {
       res.status(500).json({ message: "Error fetching routes", error: error.message });
     }
@@ -362,29 +369,35 @@ const operatorController = {
       const { id } = req.params;
       const opId = await operatorController.getOperatorId(req.user.id);
 
-      // Verify ownership
-      const [route] = await connection.execute("SELECT id FROM routes WHERE id = ? AND operator_id = ?", [id, opId]);
-      if (route.length === 0) throw new Error("Route not found or unauthorized");
+      // Verify ownership ( allow cleanup of global routes for now, or just operator's own )
+      const [route] = await connection.execute("SELECT operator_id FROM routes WHERE id = ?", [id]);
+      if (route.length === 0) {
+         return res.status(404).json({ message: "Route not found" });
+      }
+
+      if (route[0].operator_id !== null && route[0].operator_id !== opId) {
+         return res.status(403).json({ message: "Unauthorized to delete this route" });
+      }
 
       // Check for active trips
       const [trips] = await connection.execute(`
         SELECT ti.id FROM trip_instances ti 
         JOIN trip_schedules ts ON ti.schedule_id = ts.id 
-        WHERE ts.route_id = ? AND ti.status != 'completed' AND ti.status != 'cancelled'
+        WHERE ts.route_id = ? AND ti.status NOT IN ('completed', 'cancelled')
       `, [id]);
       
       if (trips.length > 0) {
-        throw new Error("Cannot delete route with active or upcoming trips.");
+        return res.status(400).json({ message: "Cannot delete route with active or upcoming trips. Cancel the trips first." });
       }
 
       await connection.execute("DELETE FROM routes WHERE id = ?", [id]);
       await connection.commit();
       res.json({ message: "Route removed successfully" });
     } catch (error) {
-      await connection.rollback();
-      res.status(500).json({ message: error.message });
+      if (connection) await connection.rollback();
+      res.status(500).json({ message: "Database error during route deletion", error: error.message });
     } finally {
-      connection.release();
+      if (connection) connection.release();
     }
   },
 

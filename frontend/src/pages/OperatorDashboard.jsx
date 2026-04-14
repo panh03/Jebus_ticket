@@ -423,7 +423,11 @@ const OperatorDashboard = () => {
                                        <button className="delete-icon-btn" style={{ background: '#f1f5f9', color: '#64748b' }} onClick={(e) => openEditRouteModal(route, e)}>
                                           <i className="fas fa-edit"></i>
                                        </button>
-                                       <button className="delete-icon-btn" onClick={(e) => handleDeleteRoute(route.id, e)}>
+                                       <button 
+                                          className={`delete-icon-btn ${route.active_trips > 0 ? 'disabled-action' : ''}`} 
+                                          onClick={(e) => route.active_trips === 0 && handleDeleteRoute(route.id, e)}
+                                          title={route.active_trips > 0 ? "Cannot delete route with active trips" : "Delete route"}
+                                       >
                                           <i className="fas fa-times"></i>
                                        </button>
                                     </div>
@@ -431,8 +435,11 @@ const OperatorDashboard = () => {
                                  <div className="route-main">
                                     <h3>{route.from_city} &rarr; {route.to_city}</h3>
                                     <div className="route-tags">
-                                       <span className="tag"><i className="fas fa-clock"></i> {route.duration}</span>
-                                       <span className="tag price-tag">{Number(route.base_price || 0).toLocaleString()} VND</span>
+                                       <span className="meta-item"><i className="fas fa-clock"></i> {route.duration}</span>
+                                       <span className="meta-item"><i className="fas fa-tag"></i> {Number(route.base_price || 0).toLocaleString()} VND</span>
+                                       <span className={`meta-item ${route.active_trips > 0 ? 'active-pulse' : ''}`}>
+                                          <i className="fas fa-bus"></i> {route.active_trips} Active Trips
+                                       </span>
                                     </div>
                                  </div>
                                  <div className="card-footer">

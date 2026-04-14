@@ -3,12 +3,7 @@ import { useState } from "react";
 const CityDropdown = ({ value, onSelect, placeholder }) => {
   const [open, setOpen] = useState(false);
 
-  const cities = [
-    "Ho Chi Minh",
-    "Ha Noi",
-    "Da Lat",
-    "Da Nang"
-  ];
+  const cities = []; // Cities are now dynamically fetched from the API via Hero or other dynamic components
 
   return (
     <div className="relative w-full">

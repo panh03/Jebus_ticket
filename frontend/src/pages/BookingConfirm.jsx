@@ -61,7 +61,7 @@ const BookingConfirm = () => {
                         </div>
                         <div className="info-row">
                             <span className="label">Route:</span>
-                            <span className="value">{trip.from || "HCMC"} &rarr; {trip.to || "Da Lat"}</span>
+                            <span className="value">{trip.from} &rarr; {trip.to}</span>
                         </div>
                         <div className="info-row">
                             <span className="label">Departure:</span>
