@@ -46,8 +46,8 @@ const OperatorDashboard = () => {
          ]);
          setTrips(tripsRes.data);
          setRoutes(routesRes.data);
-      } catch (err) { 
-         console.error("Error fetching operations data:", err); 
+      } catch (err) {
+         console.error("Error fetching operations data:", err);
       }
    }
 
@@ -61,8 +61,8 @@ const OperatorDashboard = () => {
             const res = await axios.get(url, getAuthHeader());
             setTrips(res.data);
          } else if (activeTab === "routes") {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/operator/routes`, getAuthHeader());
-            setRoutes(res.data);
+            const routes = await axios.get(`${import.meta.env.VITE_API_URL}/api/operator/routes`, getAuthHeader());
+            setRoutes(routes.data);
          } else if (activeTab === "promotions") {
             const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/operator/promotions`, getAuthHeader());
             setPromotions(res.data);
@@ -142,7 +142,7 @@ const OperatorDashboard = () => {
       try {
          await axios.post(`${import.meta.env.VITE_API_URL}/api/operator/trips`, tripForm, getAuthHeader());
          setIsTripModalOpen(false);
-         fetchActiveTabData();
+         await fetchActiveTabData();
       } catch (err) { alert("Failed to add trip: " + (err.response?.data?.message || err.message)); }
    };
 
@@ -164,7 +164,7 @@ const OperatorDashboard = () => {
                <span>Operator Studio</span>
             </div>
             <nav className="sidebar-nav">
-               <button className={activeTab === 'trips' && !selectedRoute ? 'active' : ''} onClick={() => { setActiveTab('trips'); setSelectedRoute(null); }}>
+               <button className={activeTab === 'trips' ? 'active' : ''} onClick={() => { setActiveTab('trips'); setSelectedRoute(null); }}>
                   <i className="fas fa-route"></i> Manage Trips
                </button>
                <button className={activeTab === 'routes' ? 'active' : ''} onClick={() => setActiveTab('routes')}>
@@ -234,7 +234,7 @@ const OperatorDashboard = () => {
                         </div>
                         <table className="dashboard-table">
                            <thead>
-                               <tr>
+                              <tr>
                                  <th>Route</th>
                                  <th>Bus Info</th>
                                  <th>Departure Date</th>
@@ -305,77 +305,38 @@ const OperatorDashboard = () => {
                   {activeTab === "routes" && (
                      <div className="routes-management animate-fade-in">
                         <header className="list-header" style={{ marginBottom: '2rem' }}>
-                           <h3>Route Master List</h3>
+                           <div className="title-group">
+                              <h3>Route Master List</h3>
+                              <p className="subtitle">Manage and view all available travel corridors</p>
+                           </div>
                            <button className="add-promo-btn" onClick={() => setIsRouteModalOpen(true)}>
                               <i className="fas fa-plus"></i> Add New Route
                            </button>
                         </header>
 
-                        <div className="split-layout">
-                           <aside className="master-panel">
-                              {routes.map(route => (
-                                 <div
-                                    key={route.id}
-                                    className={`route-item ${selectedRoute?.id === route.id ? 'selected' : ''}`}
-                                    onClick={() => handleRouteClick(route)}
-                                 >
-                                    <div className="route-item-header">
-                                       <span className="id">Route #{route.id}</span>
-                                       <span className="price">{Number(route.base_price || 0).toLocaleString()} VND</span>
+                        <div className="routes-grid">
+                           {routes.map(route => (
+                              <div
+                                 key={route.id}
+                                 className="route-card clickable"
+                                 onClick={() => handleRouteClick(route)}
+                              >
+                                 <div className="route-card-header">
+                                    <span className="route-id">Route #{route.id}</span>
+                                    <span className="dist"><i className="fas fa-road"></i> {route.distance} km</span>
+                                 </div>
+                                 <div className="route-main">
+                                    <h3>{route.from_city} &rarr; {route.to_city}</h3>
+                                    <div className="route-tags">
+                                       <span className="tag"><i className="fas fa-clock"></i> {route.duration}</span>
+                                       <span className="tag price-tag">{Number(route.base_price || 0).toLocaleString()} VND</span>
                                     </div>
-                                    <h4>{route.from_city} &rarr; {route.to_city}</h4>
-                                    <div className="route-meta" style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.5rem' }}>
-                                       <span><i className="fas fa-road"></i> {route.distance} km</span> &bull; 
-                                       <span><i className="fas fa-clock"></i> {route.duration}</span>
-                                    </div>
                                  </div>
-                              ))}
-                           </aside>
-
-                           <main className="detail-panel">
-                              {selectedRoute ? (
-                                 <div className="route-detail-content">
-                                    <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                       <h3>Trips for {selectedRoute.from_city} &rarr; {selectedRoute.to_city}</h3>
-                                       <button className="add-btn-sm" onClick={() => openTripModal(selectedRoute)}>
-                                          <i className="fas fa-plus"></i> Add Trip Run
-                                       </button>
-                                    </header>
-
-                                    <table className="dashboard-table" style={{ marginTop: 0 }}>
-                                       <thead>
-                                          <tr>
-                                             <th>Date</th>
-                                             <th>Status</th>
-                                             <th>Actions</th>
-                                          </tr>
-                                       </thead>
-                                       <tbody>
-                                          {trips.length === 0 ? (
-                                             <tr><td colSpan="3" className="empty-row text-center">No trips scheduled for this route</td></tr>
-                                          ) : (
-                                             trips.map(trip => (
-                                                <tr key={trip.id}>
-                                                   <td>{new Date(trip.departure_datetime).toLocaleString()}</td>
-                                                   <td><span className={`status-badge ${trip.status}`}>{trip.status}</span></td>
-                                                   <td>
-                                                      <button className="view-btn green" onClick={() => viewTripDetails(trip.id)}>
-                                                         View
-                                                      </button>
-                                                   </td>
-                                                </tr>
-                                             ))
-                                          )}
-                                       </tbody>
-                                    </table>
+                                 <div className="card-footer">
+                                    <span>View Scheduled Trips &rarr;</span>
                                  </div>
-                              ) : (
-                                 <div className="empty-state">
-                                    <i className="fas fa-map-marked-alt"></i>
-                                    <p>Select a route from the left to view and manage its trips</p>
-                                 </div>
-                              )}
-                           </main>
+                              </div>
+                           ))}
                         </div>
                      </div>
                   )}
@@ -524,36 +485,36 @@ const OperatorDashboard = () => {
                         <div className="form-row">
                            <div className="form-group">
                               <label>Origin City</label>
-                              <input type="text" className="form-input" required 
-                                 value={routeForm.from_city} onChange={e => setRouteForm({...routeForm, from_city: e.target.value})} />
+                              <input type="text" className="form-input" required
+                                 value={routeForm.from_city} onChange={e => setRouteForm({ ...routeForm, from_city: e.target.value })} />
                            </div>
                            <div className="form-group">
                               <label>Destination City</label>
-                              <input type="text" className="form-input" required 
-                                 value={routeForm.to_city} onChange={e => setRouteForm({...routeForm, to_city: e.target.value})} />
+                              <input type="text" className="form-input" required
+                                 value={routeForm.to_city} onChange={e => setRouteForm({ ...routeForm, to_city: e.target.value })} />
                            </div>
                         </div>
                         <div className="form-row">
                            <div className="form-group">
                               <label>Distance (km)</label>
-                              <input type="number" className="form-input" required 
-                                 value={routeForm.distance} onChange={e => setRouteForm({...routeForm, distance: e.target.value})} />
+                              <input type="number" className="form-input" required
+                                 value={routeForm.distance} onChange={e => setRouteForm({ ...routeForm, distance: e.target.value })} />
                            </div>
                            <div className="form-group">
                               <label>Duration (e.g., 6 hours)</label>
-                              <input type="text" className="form-input" required 
-                                 value={routeForm.duration} onChange={e => setRouteForm({...routeForm, duration: e.target.value})} />
+                              <input type="text" className="form-input" required
+                                 value={routeForm.duration} onChange={e => setRouteForm({ ...routeForm, duration: e.target.value })} />
                            </div>
                         </div>
                         <div className="form-group">
                            <label>Base Price (VND)</label>
-                           <input type="number" className="form-input" required 
-                              value={routeForm.base_price} onChange={e => setRouteForm({...routeForm, base_price: e.target.value})} />
+                           <input type="number" className="form-input" required
+                              value={routeForm.base_price} onChange={e => setRouteForm({ ...routeForm, base_price: e.target.value })} />
                         </div>
                         <div className="form-group">
                            <label className="form-checkbox">
-                              <input type="checkbox" checked={routeForm.is_active} 
-                                 onChange={e => setRouteForm({...routeForm, is_active: e.target.checked})} />
+                              <input type="checkbox" checked={routeForm.is_active}
+                                 onChange={e => setRouteForm({ ...routeForm, is_active: e.target.checked })} />
                               Route is active and visible
                            </label>
                         </div>
@@ -580,7 +541,7 @@ const OperatorDashboard = () => {
                         <div className="form-group">
                            <label>Select Route</label>
                            <select className="form-select" required value={tripForm.route_id}
-                              onChange={e => setTripForm({...tripForm, route_id: e.target.value})}>
+                              onChange={e => setTripForm({ ...tripForm, route_id: e.target.value })}>
                               <option value="">-- Choose a Route --</option>
                               {routes.map(r => (
                                  <option key={r.id} value={r.id}>{r.from_city} &rarr; {r.to_city}</option>
@@ -590,37 +551,37 @@ const OperatorDashboard = () => {
                         <div className="form-row">
                            <div className="form-group">
                               <label>Bus Info (Plate / Type)</label>
-                              <input type="text" className="form-input" placeholder="e.g. 51B-12345 (Sleeper)" required 
-                                 value={tripForm.bus_info} onChange={e => setTripForm({...tripForm, bus_info: e.target.value})} />
+                              <input type="text" className="form-input" placeholder="e.g. 51B-12345 (Sleeper)" required
+                                 value={tripForm.bus_info} onChange={e => setTripForm({ ...tripForm, bus_info: e.target.value })} />
                            </div>
                            <div className="form-group">
                               <label>Bus Capacity</label>
-                              <input type="number" className="form-input" required 
-                                 value={tripForm.capacity} onChange={e => setTripForm({...tripForm, capacity: e.target.value})} />
+                              <input type="number" className="form-input" required
+                                 value={tripForm.capacity} onChange={e => setTripForm({ ...tripForm, capacity: e.target.value })} />
                            </div>
                         </div>
                         <div className="form-row">
                            <div className="form-group">
                               <label>Departure Time</label>
-                              <input type="datetime-local" className="form-input" required 
-                                 value={tripForm.departs_at} onChange={e => setTripForm({...tripForm, departs_at: e.target.value})} />
+                              <input type="datetime-local" className="form-input" required
+                                 value={tripForm.departs_at} onChange={e => setTripForm({ ...tripForm, departs_at: e.target.value })} />
                            </div>
                            <div className="form-group">
                               <label>Arrival Time</label>
-                              <input type="datetime-local" className="form-input" required 
-                                 value={tripForm.arrives_at} onChange={e => setTripForm({...tripForm, arrives_at: e.target.value})} />
+                              <input type="datetime-local" className="form-input" required
+                                 value={tripForm.arrives_at} onChange={e => setTripForm({ ...tripForm, arrives_at: e.target.value })} />
                            </div>
                         </div>
                         <div className="form-row">
                            <div className="form-group">
                               <label>Price Multiplier</label>
-                              <input type="number" step="0.1" className="form-input" required 
-                                 value={tripForm.price_multiplier} onChange={e => setTripForm({...tripForm, price_multiplier: e.target.value})} />
+                              <input type="number" step="0.1" className="form-input" required
+                                 value={tripForm.price_multiplier} onChange={e => setTripForm({ ...tripForm, price_multiplier: e.target.value })} />
                            </div>
                            <div className="form-group">
                               <label>Initial Status</label>
                               <select className="form-select" value={tripForm.status}
-                                 onChange={e => setTripForm({...tripForm, status: e.target.value})}>
+                                 onChange={e => setTripForm({ ...tripForm, status: e.target.value })}>
                                  <option value="scheduled">Scheduled</option>
                                  <option value="on_time">On Time</option>
                                  <option value="delayed">Delayed</option>
