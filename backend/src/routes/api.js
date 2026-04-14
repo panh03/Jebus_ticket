@@ -34,9 +34,13 @@ router.get("/operator/promotions", authMiddleware, isOperator, operatorControlle
 router.post("/operator/promotions", authMiddleware, isOperator, operatorController.createPromotion);
 router.get("/operator/trips", authMiddleware, isOperator, operatorController.getTrips);
 router.post("/operator/trips", authMiddleware, isOperator, operatorController.createTrip);
+router.put("/operator/trips/:id", authMiddleware, isOperator, operatorController.updateTrip);
+router.delete("/operator/trips/:id", authMiddleware, isOperator, operatorController.deleteTrip);
 router.put("/operator/trips/:id/status", authMiddleware, isOperator, operatorController.updateTripStatus);
 router.get("/operator/routes", authMiddleware, isOperator, operatorController.getRoutes);
 router.post("/operator/routes", authMiddleware, isOperator, operatorController.createRoute);
+router.put("/operator/routes/:id", authMiddleware, isOperator, operatorController.updateRoute);
+router.delete("/operator/routes/:id", authMiddleware, isOperator, operatorController.deleteRoute);
 router.get("/operator/trips/:instanceId/passengers", authMiddleware, isOperator, operatorController.getPassengersByTrip);
 router.get("/operator/trips/:instanceId/seats", authMiddleware, isOperator, operatorController.getTripSeats);
 router.get("/operator/cancellations", authMiddleware, isOperator, operatorController.getCancellationRequests);

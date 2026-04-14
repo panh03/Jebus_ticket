@@ -58,7 +58,8 @@ const operatorController = {
       const { routeId } = req.query;
       
       let query = `
-        SELECT ti.*, ts.departure_time, ts.arrival_time, ts.price, r.from_city, r.to_city
+        SELECT ti.*, ts.departure_time, ts.arrival_time, ts.price, r.from_city, r.to_city,
+               (SELECT COUNT(*) FROM bookings b WHERE b.trip_instance_id = ti.id AND b.status != 'cancelled') as booking_count
         FROM trip_instances ti
         JOIN trip_schedules ts ON ti.schedule_id = ts.id
         JOIN routes r ON ts.route_id = r.id
@@ -89,6 +90,71 @@ const operatorController = {
       res.json({ message: "Trip status updated" });
     } catch (error) {
       res.status(500).json({ message: "Error updating trip status", error: error.message });
+    }
+  },
+
+  updateTrip: async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const { id } = req.params;
+      const { bus_info, capacity, departs_at, arrives_at, price_multiplier, status } = req.body;
+
+      // 1. Get current trip info
+      const [oldTrip] = await connection.execute("SELECT capacity FROM trip_instances WHERE id = ?", [id]);
+      if (oldTrip.length === 0) throw new Error("Trip not found");
+
+      // 2. Update trip instance
+      await connection.execute(
+        "UPDATE trip_instances SET bus_info = ?, capacity = ?, departure_datetime = ?, arrival_datetime = ?, price_multiplier = ?, status = ? WHERE id = ?",
+        [bus_info, capacity, departs_at, arrives_at, price_multiplier, status, id]
+      );
+
+      // 3. If capacity changed, re-sync seats (Warning: this is destructive to existing bookings if capacity decreases significantly)
+      if (capacity !== oldTrip[0].capacity) {
+        // Delete unused available seats or add new ones
+        await connection.execute("DELETE FROM seats WHERE trip_instance_id = ? AND status = 'available'", [id]);
+        
+        // Re-add seats up to new capacity (ignoring already booked ones which were not deleted)
+        const [bookedSeats] = await connection.execute("SELECT seat_number FROM seats WHERE trip_instance_id = ?", [id]);
+        const bookedSet = new Set(bookedSeats.map(s => s.seat_number));
+
+        for (let i = 1; i <= capacity; i++) {
+          const row = Math.ceil(i / 2);
+          const col = i % 2 === 1 ? 'A' : 'B';
+          const seatNum = `${col}${row}`;
+          if (!bookedSet.has(seatNum)) {
+            await connection.execute("INSERT INTO seats (trip_instance_id, seat_number, status) VALUES (?, ?, 'available')", [id, seatNum]);
+          }
+        }
+      }
+
+      await connection.commit();
+      res.json({ message: "Trip updated successfully" });
+    } catch (error) {
+      await connection.rollback();
+      res.status(500).json({ message: "Error updating trip", error: error.message });
+    } finally {
+      connection.release();
+    }
+  },
+
+  deleteTrip: async (req, res) => {
+    try {
+      const { id } = req.params;
+      // Check for bookings
+      const [bookings] = await pool.execute("SELECT id FROM bookings WHERE trip_instance_id = ? AND status != 'cancelled'", [id]);
+      if (bookings.length > 0) {
+        return res.status(400).json({ message: "Cannot delete trip with active bookings. Cancel them first." });
+      }
+      
+      // Delete in correct order (seats first, though cascading might be set)
+      await pool.execute("DELETE FROM seats WHERE trip_instance_id = ?", [id]);
+      await pool.execute("DELETE FROM trip_instances WHERE id = ?", [id]);
+      
+      res.json({ message: "Trip removed successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Error deleting trip", error: error.message });
     }
   },
 
@@ -268,56 +334,121 @@ const operatorController = {
     }
   },
 
+  updateRoute: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const opId = await operatorController.getOperatorId(req.user.id);
+      const { from_city, to_city, distance, duration, base_price, is_active } = req.body;
+
+      // Verify ownership
+      const [route] = await pool.execute("SELECT id FROM routes WHERE id = ? AND operator_id = ?", [id, opId]);
+      if (route.length === 0) return res.status(403).json({ message: "Forbidden or route not found" });
+
+      await pool.execute(
+        "UPDATE routes SET from_city = ?, to_city = ?, distance = ?, duration = ?, base_price = ?, is_active = ? WHERE id = ?",
+        [from_city, to_city, distance, duration, base_price, is_active, id]
+      );
+
+      res.json({ message: "Route updated successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Error updating route", error: error.message });
+    }
+  },
+
+  deleteRoute: async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const { id } = req.params;
+      const opId = await operatorController.getOperatorId(req.user.id);
+
+      // Verify ownership
+      const [route] = await connection.execute("SELECT id FROM routes WHERE id = ? AND operator_id = ?", [id, opId]);
+      if (route.length === 0) throw new Error("Route not found or unauthorized");
+
+      // Check for active trips
+      const [trips] = await connection.execute(`
+        SELECT ti.id FROM trip_instances ti 
+        JOIN trip_schedules ts ON ti.schedule_id = ts.id 
+        WHERE ts.route_id = ? AND ti.status != 'completed' AND ti.status != 'cancelled'
+      `, [id]);
+      
+      if (trips.length > 0) {
+        throw new Error("Cannot delete route with active or upcoming trips.");
+      }
+
+      await connection.execute("DELETE FROM routes WHERE id = ?", [id]);
+      await connection.commit();
+      res.json({ message: "Route removed successfully" });
+    } catch (error) {
+      await connection.rollback();
+      res.status(500).json({ message: error.message });
+    } finally {
+      connection.release();
+    }
+  },
+
   // 9. Create Trip
   createTrip: async (req, res) => {
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
       const opId = await operatorController.getOperatorId(req.user.id);
-      let { route_id, bus_info, capacity, departs_at, arrives_at, price_multiplier, status } = req.body;
+      let { route_id, bus_info, capacity, departs_at, arrives_at, price_multiplier, status, repeat_7_days } = req.body;
 
-      // First, we need a schedule_id to link trip_instance. 
-      let [schedules] = await connection.execute(
-        "SELECT id FROM trip_schedules WHERE route_id = ? AND operator_id = ? LIMIT 1",
-        [route_id, opId]
-      );
+      const numInstances = repeat_7_days ? 7 : 1;
+      const createdIds = [];
 
-      let scheduleId;
-      if (schedules.length === 0) {
-        // Create a phantom schedule
-        const [route] = await connection.execute("SELECT from_city, to_city, base_price FROM routes WHERE id = ?", [route_id]);
-        if (route.length === 0) throw new Error("Route not found");
+      for (let day = 0; day < numInstances; day++) {
+        // Calculate dates for this instance
+        const d_at = new Date(departs_at);
+        const a_at = new Date(arrives_at);
+        d_at.setDate(d_at.getDate() + day);
+        a_at.setDate(a_at.getDate() + day);
 
-        const departTime = departs_at.split('T')[1]?.substring(0, 8) || '00:00:00';
-        const arriveTime = arrives_at.split('T')[1]?.substring(0, 8) || '00:00:00';
+        const iso_departs = d_at.toISOString().slice(0, 19).replace('T', ' ');
+        const iso_arrives = a_at.toISOString().slice(0, 19).replace('T', ' ');
 
-        const [schedResult] = await connection.execute(
-          "INSERT INTO trip_schedules (route_id, operator_id, departure_time, arrival_time, price, days_of_week) VALUES (?, ?, ?, ?, ?, ?)",
-          [route_id, opId, departTime, arriveTime, route[0].base_price, ''] // Empty string for days means not repeating
+        // Link/Create schedule
+        let [schedules] = await connection.execute(
+          "SELECT id FROM trip_schedules WHERE route_id = ? AND operator_id = ? LIMIT 1",
+          [route_id, opId]
         );
-        scheduleId = schedResult.insertId;
-      } else {
-        scheduleId = schedules[0].id;
-      }
 
-      // Create Trip Instance
-      const [tripResult] = await connection.execute(
-        "INSERT INTO trip_instances (schedule_id, departure_datetime, arrival_datetime, status, bus_info, capacity, price_multiplier) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        [scheduleId, departs_at, arrives_at, status || 'scheduled', bus_info || 'Unknown Bus', capacity || 36, price_multiplier || 1.0]
-      );
-      const tripId = tripResult.insertId;
+        let scheduleId;
+        if (schedules.length === 0) {
+          const [route] = await connection.execute("SELECT base_price FROM routes WHERE id = ?", [route_id]);
+          const departTime = iso_departs.split(' ')[1];
+          const arriveTime = iso_arrives.split(' ')[1];
+          const [schedRes] = await connection.execute(
+            "INSERT INTO trip_schedules (route_id, operator_id, departure_time, arrival_time, price, days_of_week) VALUES (?, ?, ?, ?, ?, ?)",
+            [route_id, opId, departTime, arriveTime, route[0].base_price, '']
+          );
+          scheduleId = schedRes.insertId;
+        } else {
+          scheduleId = schedules[0].id;
+        }
 
-      // Initialize Seats based on provided capacity
-      const finalCapacity = capacity || 36;
-      for (let i = 1; i <= finalCapacity; i++) {
-        const row = Math.ceil(i / 2);
-        const col = i % 2 === 1 ? 'A' : 'B';
-        const seatNum = `${col}${row}`;
-        await connection.execute("INSERT INTO seats (trip_instance_id, seat_number, status) VALUES (?, ?, 'available')", [tripId, seatNum]);
+        // Create Instance
+        const [tripResult] = await connection.execute(
+          "INSERT INTO trip_instances (schedule_id, departure_datetime, arrival_datetime, status, bus_info, capacity, price_multiplier) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          [scheduleId, iso_departs, iso_arrives, status || 'scheduled', bus_info || 'Unknown Bus', capacity || 36, price_multiplier || 1.0]
+        );
+        const tripId = tripResult.insertId;
+        createdIds.push(tripId);
+
+        // Initialize Seats
+        const finalCapacity = capacity || 36;
+        for (let i = 1; i <= finalCapacity; i++) {
+          const row = Math.ceil(i / 2);
+          const col = i % 2 === 1 ? 'A' : 'B';
+          const seatNum = `${col}${row}`;
+          await connection.execute("INSERT INTO seats (trip_instance_id, seat_number, status) VALUES (?, ?, 'available')", [tripId, seatNum]);
+        }
       }
 
       await connection.commit();
-      res.status(201).json({ message: "Trip created", id: tripId });
+      res.status(201).json({ message: repeat_7_days ? "7 trips launched successfully" : "Trip created", ids: createdIds });
     } catch (error) {
       await connection.rollback();
       res.status(500).json({ message: "Error creating trip", error: error.message });

@@ -964,3 +964,59 @@
 }
 
 .alert-box i { font-size: 1rem; }
+
+.delete-icon-btn {
+  background: #fee2e2;
+  color: #ef4444;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.8rem;
+}
+
+.delete-icon-btn:hover {
+  background: #ef4444;
+  color: white;
+  transform: scale(1.1);
+}
+
+.red-text {
+  color: #ef4444 !important;
+}
+
+.red-text:hover {
+  background: #fee2e2 !important;
+}
+
+.disabled-action {
+  color: #cbd5e0 !important;
+  cursor: not-allowed !important;
+  opacity: 0.6;
+}
+
+.booking-stat {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 700;
+}
+
+.booking-stat .count {
+  color: #64748b;
+  font-size: 1.1rem;
+}
+
+.booking-stat .count.active {
+  color: #6366f1;
+}
+
+.booking-stat .of {
+  color: #94a3b8;
+  font-size: 0.75rem;
+}

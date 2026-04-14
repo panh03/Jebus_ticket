@@ -13,6 +13,8 @@ const OperatorDashboard = () => {
    const [selectedTripDetails, setSelectedTripDetails] = useState(null);
    const [selectedRoute, setSelectedRoute] = useState(null);
    const [isLoading, setIsLoading] = useState(true);
+   const [editingTrip, setEditingTrip] = useState(null);
+   const [editingRoute, setEditingRoute] = useState(null);
 
    // Modal & Form States
    const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
@@ -21,7 +23,7 @@ const OperatorDashboard = () => {
       from_city: "", to_city: "", distance: "", duration: "", base_price: "", is_active: true
    });
    const [tripForm, setTripForm] = useState({
-      route_id: "", bus_info: "", capacity: 36, departs_at: "", arrives_at: "", price_multiplier: 1.0, status: "scheduled"
+      route_id: "", bus_info: "", capacity: 36, departs_at: "", arrives_at: "", price_multiplier: 1.0, status: "scheduled", repeat_7_days: false
    });
 
    // Helper for auth headers
@@ -130,29 +132,100 @@ const OperatorDashboard = () => {
    const handleAddRoute = async (e) => {
       e.preventDefault();
       try {
-         await axios.post(`${import.meta.env.VITE_API_URL}/api/operator/routes`, routeForm, getAuthHeader());
+         if (editingRoute) {
+            await axios.put(`${import.meta.env.VITE_API_URL}/api/operator/routes/${editingRoute.id}`, routeForm, getAuthHeader());
+         } else {
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/operator/routes`, routeForm, getAuthHeader());
+         }
          setIsRouteModalOpen(false);
+         setEditingRoute(null);
          setRouteForm({ from_city: "", to_city: "", distance: "", duration: "", base_price: "", is_active: true });
          fetchActiveTabData();
-      } catch (err) { alert("Failed to add route"); }
+      } catch (err) { alert("Failed to save route"); }
+   };
+
+   const openRouteModal = () => {
+      setEditingRoute(null);
+      setRouteForm({ from_city: "", to_city: "", distance: "", duration: "", base_price: "", is_active: true });
+      setIsRouteModalOpen(true);
+   };
+
+   const openEditRouteModal = (route, e) => {
+      e.stopPropagation();
+      setEditingRoute(route);
+      setRouteForm({
+         from_city: route.from_city,
+         to_city: route.to_city,
+         distance: route.distance,
+         duration: route.duration,
+         base_price: route.base_price,
+         is_active: route.is_active
+      });
+      setIsRouteModalOpen(true);
+   };
+
+   const handleDeleteRoute = async (id, e) => {
+      e.stopPropagation();
+      if (!window.confirm("Are you sure you want to remove this route? All associated data will be lost.")) return;
+      try {
+         await axios.delete(`${import.meta.env.VITE_API_URL}/api/operator/routes/${id}`, getAuthHeader());
+         fetchActiveTabData();
+      } catch (err) {
+         alert(err.response?.data?.message || "Failed to delete route");
+      }
    };
 
    const handleAddTrip = async (e) => {
       e.preventDefault();
       try {
-         await axios.post(`${import.meta.env.VITE_API_URL}/api/operator/trips`, tripForm, getAuthHeader());
+         if (editingTrip) {
+            await axios.put(`${import.meta.env.VITE_API_URL}/api/operator/trips/${editingTrip.id}`, tripForm, getAuthHeader());
+         } else {
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/operator/trips`, tripForm, getAuthHeader());
+         }
          setIsTripModalOpen(false);
+         setEditingTrip(null);
          await fetchActiveTabData();
-      } catch (err) { alert("Failed to add trip: " + (err.response?.data?.message || err.message)); }
+      } catch (err) { alert("Failed to save trip: " + (err.response?.data?.message || err.message)); }
+   };
+
+   const handleDeleteTrip = async (id) => {
+      if (!window.confirm("Delete this trip instance? This action cannot be undone.")) return;
+      try {
+         await axios.delete(`${import.meta.env.VITE_API_URL}/api/operator/trips/${id}`, getAuthHeader());
+         fetchActiveTabData();
+      } catch (err) {
+         alert(err.response?.data?.message || "Failed to delete trip");
+      }
    };
 
    const openTripModal = (preSelectRoute = null) => {
-      setTripForm(prev => ({
-         ...prev,
+      setEditingTrip(null);
+      setTripForm({
          route_id: preSelectRoute?.id || selectedRoute?.id || "",
          bus_info: "",
-         capacity: 36
-      }));
+         capacity: 36,
+         departs_at: "",
+         arrives_at: "",
+         price_multiplier: 1.0,
+         status: "scheduled",
+         repeat_7_days: false
+      });
+      setIsTripModalOpen(true);
+   };
+
+   const openEditTripModal = (trip) => {
+      setEditingTrip(trip);
+      setTripForm({
+         route_id: trip.route_id,
+         bus_info: trip.bus_info,
+         capacity: trip.capacity,
+         departs_at: new Date(trip.departure_datetime).toISOString().slice(0, 16),
+         arrives_at: new Date(trip.arrival_datetime).toISOString().slice(0, 16),
+         price_multiplier: trip.price_multiplier,
+         status: trip.status,
+         repeat_7_days: false
+      });
       setIsTripModalOpen(true);
    };
 
@@ -238,7 +311,9 @@ const OperatorDashboard = () => {
                                  <th>Route</th>
                                  <th>Bus Info</th>
                                  <th>Departure Date</th>
+                                 <th>Arrival Date</th>
                                  <th>Time Range</th>
+                                 <th>Bookings</th>
                                  <th>Price (Final)</th>
                                  <th>Status</th>
                                  <th>Actions</th>
@@ -246,7 +321,7 @@ const OperatorDashboard = () => {
                            </thead>
                            <tbody>
                               {trips.length === 0 ? (
-                                 <tr><td colSpan="7" className="empty-row text-center">No runs found for this selection</td></tr>
+                                 <tr><td colSpan="9" className="empty-row text-center">No runs found for this selection</td></tr>
                               ) : (
                                  trips.map(trip => (
                                     <tr key={trip.id} className={trip.status === 'cancelled' ? 'is-disabled' : ''}>
@@ -264,11 +339,20 @@ const OperatorDashboard = () => {
                                           </div>
                                        </td>
                                        <td>{new Date(trip.departure_datetime).toLocaleDateString()}</td>
+                                       <td>{new Date(trip.arrival_datetime).toLocaleDateString()}</td>
                                        <td>
                                           <div className="time-range">
                                              <span>{trip.departure_time}</span>
                                              <i className="fas fa-minus"></i>
                                              <span>{trip.arrival_time}</span>
+                                          </div>
+                                       </td>
+                                       <td>
+                                          <div className="booking-stat">
+                                             <span className={`count ${trip.booking_count > 0 ? 'active' : ''}`}>
+                                                {trip.booking_count}
+                                             </span>
+                                             <span className="of">/{trip.capacity}</span>
                                           </div>
                                        </td>
                                        <td>
@@ -281,6 +365,17 @@ const OperatorDashboard = () => {
                                           <div className="action-btns">
                                              <button className="view-btn green" onClick={() => viewTripDetails(trip.id)}>
                                                 <i className="fas fa-list-alt"></i> Details
+                                             </button>
+                                             <button className="view-btn" onClick={() => openEditTripModal(trip)}>
+                                                <i className="fas fa-edit"></i>
+                                             </button>
+                                             <button 
+                                                className={`view-btn ${trip.booking_count > 0 ? 'disabled-action' : 'red-text'}`} 
+                                                onClick={() => handleDeleteTrip(trip.id)}
+                                                disabled={trip.booking_count > 0}
+                                                title={trip.booking_count > 0 ? "Cannot delete trip with active bookings" : "Delete trip"}
+                                             >
+                                                <i className="fas fa-trash-alt"></i>
                                              </button>
                                              <select
                                                 className="status-select"
@@ -309,7 +404,7 @@ const OperatorDashboard = () => {
                               <h3>Route Master List</h3>
                               <p className="subtitle">Manage and view all available travel corridors</p>
                            </div>
-                           <button className="add-promo-btn" onClick={() => setIsRouteModalOpen(true)}>
+                           <button className="add-promo-btn" onClick={openRouteModal}>
                               <i className="fas fa-plus"></i> Add New Route
                            </button>
                         </header>
@@ -323,7 +418,15 @@ const OperatorDashboard = () => {
                               >
                                  <div className="route-card-header">
                                     <span className="route-id">Route #{route.id}</span>
-                                    <span className="dist"><i className="fas fa-road"></i> {route.distance} km</span>
+                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                       <span className="dist"><i className="fas fa-road"></i> {route.distance} km</span>
+                                       <button className="delete-icon-btn" style={{ background: '#f1f5f9', color: '#64748b' }} onClick={(e) => openEditRouteModal(route, e)}>
+                                          <i className="fas fa-edit"></i>
+                                       </button>
+                                       <button className="delete-icon-btn" onClick={(e) => handleDeleteRoute(route.id, e)}>
+                                          <i className="fas fa-times"></i>
+                                       </button>
+                                    </div>
                                  </div>
                                  <div className="route-main">
                                     <h3>{route.from_city} &rarr; {route.to_city}</h3>
@@ -472,13 +575,13 @@ const OperatorDashboard = () => {
             )}
          </main>
 
-         {/* Add Route Modal */}
+         {/* Add/Edit Route Modal */}
          {isRouteModalOpen && (
             <div className="modal-overlay">
                <div className="modal-content">
                   <div className="modal-header">
-                     <h2>Create New Route</h2>
-                     <button className="close-modal" onClick={() => setIsRouteModalOpen(false)}>&times;</button>
+                     <h2>{editingRoute ? 'Edit travel corridor' : 'Create New Route'}</h2>
+                     <button className="close-modal" onClick={() => { setIsRouteModalOpen(false); setEditingRoute(null); }}>&times;</button>
                   </div>
                   <form onSubmit={handleAddRoute}>
                      <div className="modal-body">
@@ -520,21 +623,21 @@ const OperatorDashboard = () => {
                         </div>
                      </div>
                      <div className="modal-footer">
-                        <button type="button" className="cancel-btn" onClick={() => setIsRouteModalOpen(false)}>Cancel</button>
-                        <button type="submit" className="save-btn">Create Route</button>
+                        <button type="button" className="cancel-btn" onClick={() => { setIsRouteModalOpen(false); setEditingRoute(null); }}>Cancel</button>
+                        <button type="submit" className="save-btn">{editingRoute ? 'Update Route' : 'Create Route'}</button>
                      </div>
                   </form>
                </div>
             </div>
          )}
 
-         {/* Add Trip Modal */}
+         {/* Add/Edit Trip Modal */}
          {isTripModalOpen && (
             <div className="modal-overlay">
                <div className="modal-content">
                   <div className="modal-header">
-                     <h2>Schedule New Trip</h2>
-                     <button className="close-modal" onClick={() => setIsTripModalOpen(false)}>&times;</button>
+                     <h2>{editingTrip ? 'Edit Trip Details' : 'Schedule New Trip'}</h2>
+                     <button className="close-modal" onClick={() => { setIsTripModalOpen(false); setEditingTrip(null); }}>&times;</button>
                   </div>
                   <form onSubmit={handleAddTrip}>
                      <div className="modal-body">
@@ -562,12 +665,12 @@ const OperatorDashboard = () => {
                         </div>
                         <div className="form-row">
                            <div className="form-group">
-                              <label>Departure Time</label>
+                              <label>Departure Date & Time</label>
                               <input type="datetime-local" className="form-input" required
                                  value={tripForm.departs_at} onChange={e => setTripForm({ ...tripForm, departs_at: e.target.value })} />
                            </div>
                            <div className="form-group">
-                              <label>Arrival Time</label>
+                              <label>Arrival Date & Time</label>
                               <input type="datetime-local" className="form-input" required
                                  value={tripForm.arrives_at} onChange={e => setTripForm({ ...tripForm, arrives_at: e.target.value })} />
                            </div>
@@ -579,19 +682,33 @@ const OperatorDashboard = () => {
                                  value={tripForm.price_multiplier} onChange={e => setTripForm({ ...tripForm, price_multiplier: e.target.value })} />
                            </div>
                            <div className="form-group">
-                              <label>Initial Status</label>
+                              <label>Status</label>
                               <select className="form-select" value={tripForm.status}
                                  onChange={e => setTripForm({ ...tripForm, status: e.target.value })}>
                                  <option value="scheduled">Scheduled</option>
                                  <option value="on_time">On Time</option>
                                  <option value="delayed">Delayed</option>
+                                 <option value="cancelled">Cancelled</option>
+                                 <option value="completed">Completed</option>
                               </select>
                            </div>
                         </div>
+                        {!editingTrip && (
+                           <div className="form-group" style={{ marginTop: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: '0.75rem', border: '1px dashed #e2e8f0' }}>
+                              <label className="form-checkbox" style={{ margin: 0 }}>
+                                 <input type="checkbox" checked={tripForm.repeat_7_days}
+                                    onChange={e => setTripForm({ ...tripForm, repeat_7_days: e.target.checked })} />
+                                 <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ fontWeight: 800, color: '#6366f1' }}>Weekly Synergy: Repeat for 7 Days</span>
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#94a3b8' }}>Automatically launch 7 identical daily runs starting from the selected date</span>
+                                 </div>
+                              </label>
+                           </div>
+                        )}
                      </div>
                      <div className="modal-footer">
-                        <button type="button" className="cancel-btn" onClick={() => setIsTripModalOpen(false)}>Cancel</button>
-                        <button type="submit" className="save-btn">Launch Trip</button>
+                        <button type="button" className="cancel-btn" onClick={() => { setIsTripModalOpen(false); setEditingTrip(null); }}>Cancel</button>
+                        <button type="submit" className="save-btn">{editingTrip ? 'Save Changes' : 'Launch Trip(s)'}</button>
                      </div>
                   </form>
                </div>
