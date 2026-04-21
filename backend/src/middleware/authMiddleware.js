@@ -26,6 +26,15 @@ const isOperator = (req, res, next) => {
   }
 };
 
+const isAdmin = (req, res, next) => {
+  if (req.user && req.user.role === "admin") {
+    next();
+  } else {
+    console.warn(`Access denied for user ${req.user?.email}: Admin role required (Current role: ${req.user?.role})`);
+    res.status(403).json({ message: "Access denied: Admin role required" });
+  }
+};
+
 const optionalAuth = (req, res, next) => {
   const token = req.headers["authorization"]?.split(" ")[1];
   if (!token) {
@@ -40,4 +49,4 @@ const optionalAuth = (req, res, next) => {
   });
 };
 
-module.exports = { authMiddleware, isOperator, optionalAuth };
+module.exports = { authMiddleware, isOperator, isAdmin, optionalAuth };

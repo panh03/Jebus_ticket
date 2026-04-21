@@ -43,8 +43,8 @@ const OperatorDashboard = () => {
    const fetchAllData = async () => {
       try {
          const [tripsRes, routesRes] = await Promise.all([
-            axios.get(`${import.meta.env.VITE_API_URL}/api/operator/trips`, getAuthHeader()),
-            axios.get(`${import.meta.env.VITE_API_URL}/api/operator/routes`, getAuthHeader())
+            axios.get(`${import.meta.env.VITE_API_URL}/operator/trips`, getAuthHeader()),
+            axios.get(`${import.meta.env.VITE_API_URL}/operator/routes`, getAuthHeader())
          ]);
          setTrips(tripsRes.data);
          setRoutes(routesRes.data);
@@ -58,18 +58,18 @@ const OperatorDashboard = () => {
       try {
          if (activeTab === "trips") {
             const url = selectedRoute
-               ? `${import.meta.env.VITE_API_URL}/api/operator/trips?routeId=${selectedRoute.id}`
-               : `${import.meta.env.VITE_API_URL}/api/operator/trips`;
+               ? `${import.meta.env.VITE_API_URL}/operator/trips?routeId=${selectedRoute.id}`
+               : `${import.meta.env.VITE_API_URL}/operator/trips`;
             const res = await axios.get(url, getAuthHeader());
             setTrips(res.data);
          } else if (activeTab === "routes") {
-            const routes = await axios.get(`${import.meta.env.VITE_API_URL}/api/operator/routes`, getAuthHeader());
+            const routes = await axios.get(`${import.meta.env.VITE_API_URL}/operator/routes`, getAuthHeader());
             setRoutes(routes.data);
          } else if (activeTab === "promotions") {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/operator/promotions`, getAuthHeader());
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/operator/promotions`, getAuthHeader());
             setPromotions(res.data);
          } else if (activeTab === "requests") {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/operator/cancellations`, getAuthHeader());
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/operator/cancellations`, getAuthHeader());
             setRequests(res.data);
          }
       } catch (err) {
@@ -81,7 +81,7 @@ const OperatorDashboard = () => {
 
    const updateTripStatus = async (tripId, newStatus) => {
       try {
-         await axios.put(`${import.meta.env.VITE_API_URL}/api/operator/trips/${tripId}/status`, { status: newStatus }, getAuthHeader());
+         await axios.put(`${import.meta.env.VITE_API_URL}/operator/trips/${tripId}/status`, { status: newStatus }, getAuthHeader());
          fetchActiveTabData();
       } catch (err) {
          alert("Failed to update status");
@@ -90,7 +90,7 @@ const OperatorDashboard = () => {
 
    const processCancellation = async (requestId, status) => {
       try {
-         await axios.put(`${import.meta.env.VITE_API_URL}/api/operator/cancellations/${requestId}`, { status }, getAuthHeader());
+         await axios.put(`${import.meta.env.VITE_API_URL}/operator/cancellations/${requestId}`, { status }, getAuthHeader());
          alert(`Request ${status} successfully`);
          fetchActiveTabData();
       } catch (err) {
@@ -112,8 +112,8 @@ const OperatorDashboard = () => {
       setIsLoading(true);
       try {
          const [passRes, seatsRes] = await Promise.all([
-            axios.get(`${import.meta.env.VITE_API_URL}/api/operator/trips/${instanceId}/passengers`, getAuthHeader()),
-            axios.get(`${import.meta.env.VITE_API_URL}/api/operator/trips/${instanceId}/seats`, getAuthHeader())
+            axios.get(`${import.meta.env.VITE_API_URL}/operator/trips/${instanceId}/passengers`, getAuthHeader()),
+            axios.get(`${import.meta.env.VITE_API_URL}/operator/trips/${instanceId}/seats`, getAuthHeader())
          ]);
 
          setSelectedTripDetails({
@@ -133,9 +133,9 @@ const OperatorDashboard = () => {
       e.preventDefault();
       try {
          if (editingRoute) {
-            await axios.put(`${import.meta.env.VITE_API_URL}/api/operator/routes/${editingRoute.id}`, routeForm, getAuthHeader());
+            await axios.put(`${import.meta.env.VITE_API_URL}/operator/routes/${editingRoute.id}`, routeForm, getAuthHeader());
          } else {
-            await axios.post(`${import.meta.env.VITE_API_URL}/api/operator/routes`, routeForm, getAuthHeader());
+            await axios.post(`${import.meta.env.VITE_API_URL}/operator/routes`, routeForm, getAuthHeader());
          }
          setIsRouteModalOpen(false);
          setEditingRoute(null);
@@ -168,7 +168,7 @@ const OperatorDashboard = () => {
       e.stopPropagation();
       if (!window.confirm("Are you sure you want to remove this route? All associated data will be lost.")) return;
       try {
-         await axios.delete(`${import.meta.env.VITE_API_URL}/api/operator/routes/${id}`, getAuthHeader());
+         await axios.delete(`${import.meta.env.VITE_API_URL}/operator/routes/${id}`, getAuthHeader());
          fetchActiveTabData();
       } catch (err) {
          alert(err.response?.data?.message || "Failed to delete route");
@@ -179,9 +179,9 @@ const OperatorDashboard = () => {
       e.preventDefault();
       try {
          if (editingTrip) {
-            await axios.put(`${import.meta.env.VITE_API_URL}/api/operator/trips/${editingTrip.id}`, tripForm, getAuthHeader());
+            await axios.put(`${import.meta.env.VITE_API_URL}/operator/trips/${editingTrip.id}`, tripForm, getAuthHeader());
          } else {
-            await axios.post(`${import.meta.env.VITE_API_URL}/api/operator/trips`, tripForm, getAuthHeader());
+            await axios.post(`${import.meta.env.VITE_API_URL}/operator/trips`, tripForm, getAuthHeader());
          }
          setIsTripModalOpen(false);
          setEditingTrip(null);
@@ -192,7 +192,7 @@ const OperatorDashboard = () => {
    const handleDeleteTrip = async (id) => {
       if (!window.confirm("Delete this trip instance? This action cannot be undone.")) return;
       try {
-         await axios.delete(`${import.meta.env.VITE_API_URL}/api/operator/trips/${id}`, getAuthHeader());
+         await axios.delete(`${import.meta.env.VITE_API_URL}/operator/trips/${id}`, getAuthHeader());
          fetchActiveTabData();
       } catch (err) {
          alert(err.response?.data?.message || "Failed to delete trip");

@@ -4,8 +4,10 @@ const authController = require("../controllers/authController");
 const tripController = require("../controllers/tripController");
 const bookingController = require("../controllers/bookingController");
 
-const { authMiddleware, isOperator, optionalAuth } = require("../middleware/authMiddleware");
+const { authMiddleware, isOperator, isAdmin, optionalAuth } = require("../middleware/authMiddleware");
 const operatorController = require("../controllers/operatorController");
+
+const adminController = require("../controllers/adminController");
 
 // Auth
 router.post("/auth/register", authController.register);
@@ -29,7 +31,7 @@ router.get("/bookings/user/:userId", authMiddleware, bookingController.getUserBo
 router.post("/bookings/:id/cancel", authMiddleware, bookingController.cancel);
 router.post("/bookings/:id/cancel-request", authMiddleware, bookingController.cancelRequest);
 
-// Operator Management
+// Operator Management (Operator Side)
 router.get("/operator/promotions", authMiddleware, isOperator, operatorController.getPromotions);
 router.post("/operator/promotions", authMiddleware, isOperator, operatorController.createPromotion);
 router.get("/operator/trips", authMiddleware, isOperator, operatorController.getTrips);
@@ -45,5 +47,29 @@ router.get("/operator/trips/:instanceId/passengers", authMiddleware, isOperator,
 router.get("/operator/trips/:instanceId/seats", authMiddleware, isOperator, operatorController.getTripSeats);
 router.get("/operator/cancellations", authMiddleware, isOperator, operatorController.getCancellationRequests);
 router.put("/operator/cancellations/:requestId", authMiddleware, isOperator, operatorController.handleCancellationRequest);
+
+// Admin Management
+router.get("/admin/users", authMiddleware, isAdmin, adminController.getUsers);
+router.delete("/admin/users/:id", authMiddleware, isAdmin, adminController.deleteUser);
+router.get("/admin/users/:id", authMiddleware, isAdmin, adminController.getUserDetail);
+
+router.get("/admin/operators", authMiddleware, isAdmin, adminController.getOperators);
+router.get("/admin/operators/:id", authMiddleware, isAdmin, adminController.getOperatorDetail);
+router.put("/admin/operators/:id/approve", authMiddleware, isAdmin, adminController.approveOperator);
+router.put("/admin/operators/:id/reject", authMiddleware, isAdmin, adminController.rejectOperator);
+router.delete("/admin/operators/:id", authMiddleware, isAdmin, adminController.deleteOperator);
+
+router.put("/admin/routes/:id/status", authMiddleware, isAdmin, adminController.updateRouteStatus);
+router.delete("/admin/routes/:id", authMiddleware, isAdmin, adminController.deleteRoute);
+
+router.put("/admin/trips/:id/status", authMiddleware, isAdmin, adminController.updateTripStatus);
+router.delete("/admin/trips/:id", authMiddleware, isAdmin, adminController.deleteTrip);
+
+router.get("/admin/operators/:operatorId/buses", authMiddleware, isAdmin, adminController.getBuses);
+router.post("/admin/operators/:operatorId/buses", authMiddleware, isAdmin, adminController.addBus);
+router.get("/admin/buses", authMiddleware, isAdmin, adminController.getAllBuses);
+router.put("/admin/buses/:id", authMiddleware, isAdmin, adminController.updateBus);
+router.delete("/admin/buses/:id", authMiddleware, isAdmin, adminController.deleteBus);
+router.get("/admin/performance", authMiddleware, isAdmin, adminController.getPerformanceStats);
 
 module.exports = router;

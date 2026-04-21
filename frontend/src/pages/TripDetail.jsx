@@ -18,8 +18,8 @@ const TripDetail = () => {
       setLoading(true);
       try {
         const [seatsRes, tripRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_API_URL}/api/trips/${id}/seats`),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/trips/${id}`)
+          axios.get(`${import.meta.env.VITE_API_URL}/trips/${id}/seats`),
+          axios.get(`${import.meta.env.VITE_API_URL}/trips/${id}`)
         ]);
         setSeats(seatsRes.data);
         setTrip(tripRes.data);

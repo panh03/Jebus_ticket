@@ -52,6 +52,8 @@ const Navbar = () => {
                   <ul className="dropdown-menu">
                     {user.role === 'operator' ? (
                       <li><Link to="/operator/dashboard" onClick={() => setIsDropdownOpen(false)}><i className="fas fa-th-large"></i> Dashboard</Link></li>
+                    ) : user.role === 'admin' ? (
+                      <li><Link to="/admin/dashboard" onClick={() => setIsDropdownOpen(false)}><i className="fas fa-user-shield"></i> Admin Panel</Link></li>
                     ) : (
                       <li><Link to="/profile" onClick={() => setIsDropdownOpen(false)}><i className="fas fa-ticket-alt"></i> My Bookings</Link></li>
                     )}

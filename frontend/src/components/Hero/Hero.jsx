@@ -17,7 +17,7 @@ const Hero = () => {
   useEffect(() => {
     const fetchCities = async () => {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/trips/cities`);
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/trips/cities`);
         setCities(res.data);
       } catch (err) {
         console.error("Error fetching cities:", err);
@@ -31,7 +31,7 @@ const Hero = () => {
       try {
         let history = [];
         if (user) {
-          const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/trips/history`);
+          const res = await axios.get(`${import.meta.env.VITE_API_URL}/trips/history`);
           history = res.data;
         } else {
           const localHistory = JSON.parse(localStorage.getItem("searchHistory") || "[]");
@@ -42,7 +42,7 @@ const Hero = () => {
           setSuggestions(history);
           setSuggestionType("history");
         } else {
-          const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/trips/popular`);
+          const res = await axios.get(`${import.meta.env.VITE_API_URL}/trips/popular`);
           setSuggestions(res.data);
           setSuggestionType("popular");
         }
@@ -68,10 +68,9 @@ const Hero = () => {
       }
       localStorage.setItem("searchHistory", JSON.stringify(localHistory.slice(0, 10)));
 
-      // Save history to backend if logged in
       if (user) {
         try {
-          await axios.post(`${import.meta.env.VITE_API_URL}/api/trips/history`, { from, to });
+          await axios.post(`${import.meta.env.VITE_API_URL}/trips/history`, { from, to });
         } catch (err) {
           console.warn("Backend history save failed:", err.message);
         }
@@ -86,7 +85,7 @@ const Hero = () => {
     const toCity = suggestion.to_city;
 
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/trips/verify-route?from=${fromCity}&to=${toCity}`);
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/trips/verify-route?from=${fromCity}&to=${toCity}`);
       if (!res.data.active) {
         alert("Sorry, this route is currently suspended.");
         return;
@@ -112,7 +111,7 @@ const Hero = () => {
       localStorage.setItem("searchHistory", JSON.stringify(localHistory.slice(0, 10)));
 
       if (user) {
-        try { await axios.post(`${import.meta.env.VITE_API_URL}/api/trips/history`, { from: fromCity, to: toCity }); } catch(err) {}
+        try { await axios.post(`${import.meta.env.VITE_API_URL}/trips/history`, { from: fromCity, to: toCity }); } catch(err) {}
       }
 
       navigate(`/search?from=${fromCity}&to=${toCity}&date=${today}`);

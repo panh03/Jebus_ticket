@@ -13,6 +13,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
 import OperatorDashboard from "./pages/OperatorDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import Footer from "./components/Footer/Footer";
 
 const ProtectedRoute = ({ children, role }) => {
@@ -46,6 +47,16 @@ function App() {
             element={
               <ProtectedRoute role="operator">
                 <OperatorDashboard />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Admin Routes */}
+          <Route 
+            path="/admin/dashboard" 
+            element={
+              <ProtectedRoute role="admin">
+                <AdminDashboard />
               </ProtectedRoute>
             } 
           />

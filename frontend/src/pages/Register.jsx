@@ -11,16 +11,20 @@ const Register = () => {
     phone: "",
     role: "user" 
   });
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     try {
-      await axios.post(`${import.meta.env.VITE_API_URL}/api/auth/register`, formData);
-      alert("Registration successful! Please login.");
-      navigate("/login");
+      await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, formData);
+      setShowModal(true);
     } catch (error) {
       alert("Registration failed: " + (error.response?.data?.message || "Something went wrong"));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -96,6 +100,29 @@ const Register = () => {
           Already have an account? <Link to="/login">Login</Link>
         </p>
       </div>
+
+      {showModal && (
+        <div className="modal-overlay auth-modal-overlay">
+          <div className="modal-content auth-modal-content animate-pop-in" style={{ textAlign: 'center', maxWidth: '450px' }}>
+            <div className="success-icon" style={{ fontSize: '4rem', color: '#10b981', marginBottom: '1.5rem' }}>
+              <i className="fas fa-check-circle"></i>
+            </div>
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '1rem', color: '#1f2937' }}>Registration successful!</h2>
+            <p style={{ color: '#4b5563', lineHeight: '1.6', marginBottom: '2rem' }}>
+              Congratulations! {formData.role === 'operator' 
+                ? "Your vehicle registration profile has been submitted to the system. Please wait for the Admin to review your information within 24-48 business hours." 
+                : "Your account has been created successfully. You can now log in and start booking your trips!"}
+            </p>
+            <button 
+              className="auth-btn" 
+              style={{ width: '100%' }}
+              onClick={() => navigate(formData.role === 'operator' ? '/' : '/login')}
+            >
+              {formData.role === 'operator' ? 'Back to Homepage' : 'Go to Login'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

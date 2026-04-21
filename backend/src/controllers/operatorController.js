@@ -1,4 +1,4 @@
-const pool = require("../config/database");
+const pool = require("../config/db");
 
 const operatorController = {
   // Get the operator_id linked to the current user
