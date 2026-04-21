@@ -1,4 +1,4 @@
-const pool = require("../config/database");
+const pool = require("../config/db");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
@@ -66,7 +66,7 @@ const authController = {
       // If operator, create operator entry
       if (role === 'operator') {
         await connection.execute(
-          "INSERT INTO operators (user_id, name, contact_email, phone) VALUES (?, ?, ?, ?)",
+          "INSERT INTO operators (user_id, name, contact_email, phone, status) VALUES (?, ?, ?, ?, 'pending')",
           [userId, name, email, phone]
         );
       }
@@ -99,6 +99,24 @@ const authController = {
       if (!isValid) {
         console.error(`Login attempt failed: Incorrect password for ${email}`);
         return res.status(401).json({ message: "Incorrect password" });
+      }
+
+      // If operator, check status
+      if (user.role === 'operator') {
+        const [operators] = await pool.execute("SELECT status, rejection_reason FROM operators WHERE user_id = ?", [user.id]);
+        if (operators.length > 0) {
+          const status = operators[0].status;
+          if (status === 'pending') {
+            return res.status(403).json({ 
+              message: "Your operator account is pending approval. You will be notified once approved." 
+            });
+          } else if (status === 'rejected') {
+            return res.status(403).json({ 
+              message: "Your operator account has been rejected.",
+              reason: operators[0].rejection_reason
+            });
+          }
+        }
       }
 
       const token = jwt.sign(
