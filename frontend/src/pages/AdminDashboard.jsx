@@ -338,21 +338,43 @@ const AdminDashboard = () => {
                     <ResponsiveContainer width="99%" height={380}>
                         <PieChart>
                             <Pie
-                                data={statusDistribution}
+                                data={statusDistribution.map(d => ({ ...d, displayCount: d.count === 0 ? 0.0001 : d.count }))}
                                 cx="50%"
                                 cy="50%"
                                 innerRadius={60}
                                 outerRadius={100}
                                 paddingAngle={5}
-                                dataKey="count"
+                                minAngle={5}
+                                dataKey="displayCount"
                                 nameKey="status"
                                 label={(props) => {
-                                    const { name, percent, x, y, value, index, cx } = props;
-                                    const adjustedY = value === 0 ? y + ((index - 2) * 14) : y;
+                                    const { cx, cy, midAngle, outerRadius, percent, index, payload, fill } = props;
+                                    const RADIAN = Math.PI / 180;
+                                    const sin = Math.sin(-midAngle * RADIAN);
+                                    const cos = Math.cos(-midAngle * RADIAN);
+                                    const sx = cx + outerRadius * cos;
+                                    const sy = cy + outerRadius * sin;
+                                    const mx = cx + (outerRadius + 30) * cos;
+                                    let my = cy + (outerRadius + 30) * sin;
+                                    
+                                    if (payload.count === 0) {
+                                        my += (index - 2) * 18;
+                                    }
+                                    
+                                    const ex = mx + (cos >= 0 ? 1 : -1) * 22;
+                                    const ey = my;
+                                    const textAnchor = cos >= 0 ? 'start' : 'end';
+
+                                    const displayPercent = payload.count === 0 ? 0 : (percent * 100).toFixed(0);
+
                                     return (
-                                        <text x={x} y={adjustedY} fill="#6b7280" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={12}>
-                                            {`${name} ${(percent * 100).toFixed(0)}%`}
-                                        </text>
+                                        <g>
+                                            <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
+                                            <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
+                                            <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} fill="#6b7280" textAnchor={textAnchor} dominantBaseline="central" fontSize={12}>
+                                                {`${payload.status} ${displayPercent}%`}
+                                            </text>
+                                        </g>
                                     );
                                 }}
                             >
@@ -367,7 +389,7 @@ const AdminDashboard = () => {
                                     } />
                                 ))}
                             </Pie>
-                            <Tooltip />
+                            <Tooltip formatter={(value, name, props) => [props.payload.count, name]} />
                             <Legend verticalAlign="bottom" />
                         </PieChart>
                     </ResponsiveContainer>
