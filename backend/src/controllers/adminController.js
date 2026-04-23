@@ -372,15 +372,15 @@ const getPerformanceStats = async (req, res) => {
     // Merge data for the chart
     const stats = [];
     for (let i = 1; i <= lastDay; i++) {
-        const dateStr = `${year}-${month.toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`;
-        const dayTrips = tripsData.find(d => d.date === dateStr);
-        const dayRev = revenueData.find(d => d.date === dateStr);
-        stats.push({
-            date: dateStr,
-            displayDate: `${i}/${month}`,
-            trips: dayTrips ? dayTrips.trip_count : 0,
-            revenue: dayRev ? parseFloat(dayRev.total_revenue) || 0 : 0
-        });
+      const dateStr = `${year}-${month.toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`;
+      const dayTrips = tripsData.find(d => d.date === dateStr);
+      const dayRev = revenueData.find(d => d.date === dateStr);
+      stats.push({
+        date: dateStr,
+        displayDate: `${i}/${month}`,
+        trips: dayTrips ? dayTrips.trip_count : 0,
+        revenue: dayRev ? parseFloat(dayRev.total_revenue) || 0 : 0
+      });
     }
 
     // 3. Get trip status distribution for Pie Chart
@@ -393,28 +393,28 @@ const getPerformanceStats = async (req, res) => {
 
     const defaultStatuses = ['scheduled', 'on_time', 'delayed', 'cancelled', 'completed'];
     const completeStatusData = defaultStatuses.map(status => {
-        const found = statusData.find(s => s.status === status);
-        return {
-            status,
-            count: found ? found.count : 0
-        };
+      const found = statusData.find(s => s.status === status);
+      return {
+        status,
+        count: found ? found.count : 0
+      };
     });
 
     statusData.forEach(s => {
-        if (!defaultStatuses.includes(s.status)) {
-            completeStatusData.push({ status: s.status, count: s.count });
-        }
+      if (!defaultStatuses.includes(s.status)) {
+        completeStatusData.push({ status: s.status, count: s.count });
+      }
     });
 
     res.json({
-        stats,
-        statusDistribution: completeStatusData
+      stats,
+      statusDistribution: completeStatusData
     });
   } catch (error) {
     console.error('SERVER ERROR (getPerformanceStats):', error);
-    res.status(500).json({ 
-        message: 'Error fetching performance statistics',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined 
+    res.status(500).json({
+      message: 'Error fetching performance statistics',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
