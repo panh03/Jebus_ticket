@@ -347,32 +347,23 @@ const AdminDashboard = () => {
                                 minAngle={5}
                                 dataKey="displayCount"
                                 nameKey="status"
+                                labelLine={false}
                                 label={(props) => {
-                                    const { cx, cy, midAngle, outerRadius, index, payload, fill } = props;
+                                    const { cx, cy, midAngle, outerRadius, payload, fill } = props;
+                                    
+                                    // 1. Completely hide labels if status value is 0
+                                    if (payload.count === 0) return null;
+
+                                    // 2. Display vividly colored labels for actual data
                                     const RADIAN = Math.PI / 180;
-                                    const sin = Math.sin(-midAngle * RADIAN);
-                                    const cos = Math.cos(-midAngle * RADIAN);
-                                    const sx = cx + outerRadius * cos;
-                                    const sy = cy + outerRadius * sin;
-                                    const mx = cx + (outerRadius + 30) * cos;
-                                    let my = cy + (outerRadius + 30) * sin;
-                                    
-                                    if (payload.count === 0) {
-                                        my += (index - 2) * 18;
-                                    }
-                                    
-                                    const ex = mx + (cos >= 0 ? 1 : -1) * 22;
-                                    const ey = my;
-                                    const textAnchor = cos >= 0 ? 'start' : 'end';
+                                    const radius = outerRadius + 20;
+                                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
                                     return (
-                                        <g>
-                                            <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
-                                            <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
-                                            <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} fill="#6b7280" textAnchor={textAnchor} dominantBaseline="central" fontSize={12}>
-                                                {payload.status}
-                                            </text>
-                                        </g>
+                                        <text x={x} y={y} fill={fill} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={13} fontWeight={500}>
+                                            {payload.status}
+                                        </text>
                                     );
                                 }}
                             >
