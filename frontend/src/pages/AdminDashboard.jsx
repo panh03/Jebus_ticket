@@ -296,7 +296,6 @@ const AdminDashboard = () => {
                             <YAxis 
                                 yAxisId="right" 
                                 orientation="right" 
-                                label={{ value: 'Revenue (VND)', angle: -90, position: 'right', offset: 15, fill: '#10b981' }}
                                 axisLine={false}
                                 tickLine={false}
                                 width={100}
