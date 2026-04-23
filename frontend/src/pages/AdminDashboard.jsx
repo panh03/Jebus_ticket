@@ -346,7 +346,7 @@ const AdminDashboard = () => {
                                 paddingAngle={5}
                                 dataKey="count"
                                 nameKey="status"
-                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                label={({ name, percent, value }) => value > 0 ? `${name} ${(percent * 100).toFixed(0)}%` : ''}
                             >
                                 {statusDistribution.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={
