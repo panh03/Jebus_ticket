@@ -281,6 +281,7 @@ const AdminDashboard = () => {
                                 dataKey="displayDate" 
                                 axisLine={false}
                                 tickLine={false}
+                                padding={{ left: 20, right: 20 }}
                                 tick={{ fill: '#6b7280', fontSize: 12 }}
                             />
                             <YAxis 
@@ -289,6 +290,7 @@ const AdminDashboard = () => {
                                 label={{ value: 'Trips', angle: -90, position: 'insideLeft', offset: 10, fill: '#6366f1' }}
                                 axisLine={false}
                                 tickLine={false}
+                                width={60}
                                 tick={{ fill: '#6366f1' }}
                             />
                             <YAxis 
@@ -297,6 +299,8 @@ const AdminDashboard = () => {
                                 label={{ value: 'Revenue (VND)', angle: 90, position: 'insideRight', offset: 10, fill: '#10b981' }}
                                 axisLine={false}
                                 tickLine={false}
+                                width={80}
+                                tickMargin={15}
                                 tick={{ fill: '#10b981' }}
                                 tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
                             />
