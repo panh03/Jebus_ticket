@@ -47,6 +47,7 @@ router.get("/operator/trips/:instanceId/passengers", authMiddleware, isOperator,
 router.get("/operator/trips/:instanceId/seats", authMiddleware, isOperator, operatorController.getTripSeats);
 router.get("/operator/cancellations", authMiddleware, isOperator, operatorController.getCancellationRequests);
 router.put("/operator/cancellations/:requestId", authMiddleware, isOperator, operatorController.handleCancellationRequest);
+router.get("/operator/performance", authMiddleware, isOperator, operatorController.getPerformanceStats);
 
 // Admin Management
 router.get("/admin/users", authMiddleware, isAdmin, adminController.getUsers);

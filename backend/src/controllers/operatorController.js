@@ -468,6 +468,94 @@ const operatorController = {
     } finally {
       connection.release();
     }
+  },
+
+  getPerformanceStats: async (req, res) => {
+    try {
+      const opId = await operatorController.getOperatorId(req.user.id);
+      if (!opId) return res.status(403).json({ message: "Operator profile not found" });
+
+      const { month, year } = req.query;
+      if (!month || !year) {
+        return res.status(400).json({ message: 'Month and year are required' });
+      }
+
+      const startDate = `${year}-${month.toString().padStart(2, '0')}-01 00:00:00`;
+      const lastDay = new Date(year, month, 0).getDate();
+      const endDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay} 23:59:59`;
+
+      // 1. Get daily completed trips using BETWEEN
+      const [tripsData] = await pool.execute(`
+        SELECT DATE_FORMAT(ti.departure_datetime, '%Y-%m-%d') as date, COUNT(*) as trip_count
+        FROM trip_instances ti
+        JOIN trip_schedules ts ON ti.schedule_id = ts.id
+        WHERE ti.status = 'completed' 
+        AND ts.operator_id = ?
+        AND ti.departure_datetime BETWEEN ? AND ?
+        GROUP BY date
+        ORDER BY date ASC
+      `, [opId, startDate, endDate]);
+
+      // 2. Get daily revenue (based on departure time)
+      const [revenueData] = await pool.execute(`
+        SELECT DATE_FORMAT(ti.departure_datetime, '%Y-%m-%d') as date, SUM(b.total_price) as total_revenue
+        FROM bookings b
+        JOIN trip_instances ti ON b.trip_instance_id = ti.id
+        JOIN trip_schedules ts ON ti.schedule_id = ts.id
+        WHERE b.status IN ('confirmed', 'completed') 
+        AND ts.operator_id = ?
+        AND ti.departure_datetime BETWEEN ? AND ?
+        GROUP BY date
+        ORDER BY date ASC
+      `, [opId, startDate, endDate]);
+
+      // Merge data for the chart
+      const stats = [];
+      for (let i = 1; i <= lastDay; i++) {
+          const dateStr = `${year}-${month.toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`;
+          const dayTrips = tripsData.find(d => d.date === dateStr);
+          const dayRev = revenueData.find(d => d.date === dateStr);
+          stats.push({
+              date: dateStr,
+              displayDate: `${i}/${month}`,
+              trips: dayTrips ? dayTrips.trip_count : 0,
+              revenue: dayRev ? parseFloat(dayRev.total_revenue) || 0 : 0
+          });
+      }
+
+      // 3. Get trip status distribution for Pie Chart
+      const [statusData] = await pool.execute(`
+        SELECT ti.status, COUNT(*) as count
+        FROM trip_instances ti
+        JOIN trip_schedules ts ON ti.schedule_id = ts.id
+        WHERE ts.operator_id = ?
+        AND ti.departure_datetime BETWEEN ? AND ?
+        GROUP BY ti.status
+      `, [opId, startDate, endDate]);
+
+      const defaultStatuses = ['scheduled', 'on_time', 'delayed', 'cancelled', 'completed'];
+      const completeStatusData = defaultStatuses.map(status => {
+        const found = statusData.find(s => s.status === status);
+        return {
+          status,
+          count: found ? found.count : 0
+        };
+      });
+
+      statusData.forEach(s => {
+        if (!defaultStatuses.includes(s.status)) {
+          completeStatusData.push({ status: s.status, count: s.count });
+        }
+      });
+
+      res.json({
+          stats,
+          statusDistribution: completeStatusData
+      });
+    } catch (error) {
+      console.error('SERVER ERROR (Operator Performance):', error);
+      res.status(500).json({ message: 'Error fetching performance statistics' });
+    }
   }
 };
 

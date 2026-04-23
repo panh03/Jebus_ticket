@@ -1,6 +1,12 @@
 import { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import axios from "axios";
+import { FiCalendar, FiTrendingUp, FiChevronDown } from 'react-icons/fi';
+import { 
+    ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, 
+    Tooltip, Legend, ResponsiveContainer,
+    PieChart, Pie, Cell
+} from 'recharts';
 import "./OperatorDashboard.css";
 
 const OperatorDashboard = () => {
@@ -15,6 +21,13 @@ const OperatorDashboard = () => {
    const [isLoading, setIsLoading] = useState(true);
    const [editingTrip, setEditingTrip] = useState(null);
    const [editingRoute, setEditingRoute] = useState(null);
+
+   const [performanceStats, setPerformanceStats] = useState([]);
+   const [statusDistribution, setStatusDistribution] = useState([]);
+   const [statsFilter, setStatsFilter] = useState({
+       month: new Date().getMonth() + 1,
+       year: new Date().getFullYear()
+   });
 
    // Modal & Form States
    const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
@@ -38,7 +51,7 @@ const OperatorDashboard = () => {
 
    useEffect(() => {
       fetchActiveTabData();
-   }, [activeTab, selectedRoute]);
+   }, [activeTab, selectedRoute, statsFilter]);
 
    const fetchAllData = async () => {
       try {
@@ -71,6 +84,10 @@ const OperatorDashboard = () => {
          } else if (activeTab === "requests") {
             const res = await axios.get(`${import.meta.env.VITE_API_URL}/operator/cancellations`, getAuthHeader());
             setRequests(res.data);
+         } else if (activeTab === "performance") {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/operator/performance?month=${statsFilter.month}&year=${statsFilter.year}`, getAuthHeader());
+            setPerformanceStats(res.data.stats);
+            setStatusDistribution(res.data.statusDistribution);
          }
       } catch (err) {
          console.error("Error fetching data:", err);
@@ -229,6 +246,184 @@ const OperatorDashboard = () => {
       setIsTripModalOpen(true);
    };
 
+   const renderPerformanceDashboard = () => (
+        <div className="tab-content-fade" style={{ width: '100%' }}>
+            <div className="performance-header-box" style={{ background: 'white', padding: '1.5rem', borderRadius: '1rem', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="performance-title" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <FiTrendingUp style={{ fontSize: '2rem', color: '#6366f1' }} />
+                    <div>
+                        <h2 style={{ margin: 0 }}>Performance Analytics</h2>
+                        <p style={{ margin: 0, color: '#64748b' }}>Track your business growth and trip efficiency</p>
+                    </div>
+                </div>
+                
+                <div className="performance-filter-pill" style={{ display: 'flex', gap: '1rem', background: '#f8fafc', padding: '0.5rem 1rem', borderRadius: '2rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <FiCalendar color="#64748b" />
+                        <select 
+                            style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '1rem', fontWeight: 600, color: '#334155' }}
+                            value={statsFilter.month}
+                            onChange={(e) => setStatsFilter({ ...statsFilter, month: parseInt(e.target.value) })}
+                        >
+                            {Array.from({ length: 12 }, (_, i) => (
+                                <option key={i + 1} value={i + 1}>
+                                    {new Date(0, i).toLocaleString('en', { month: 'long' })}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <div style={{ width: '1px', background: '#e2e8f0' }}></div>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <select 
+                            style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '1rem', fontWeight: 600, color: '#334155' }}
+                            value={statsFilter.year}
+                            onChange={(e) => setStatsFilter({ ...statsFilter, year: parseInt(e.target.value) })}
+                        >
+                            {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div className="performance-charts-grid" style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+                <div className="chart-wrapper main-chart" style={{ flex: '2', minWidth: '500px', background: 'white', padding: '1.5rem', borderRadius: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                    <h3 style={{ marginBottom: '1.5rem' }}>Trip Volume & Revenue Trends</h3>
+                    <ResponsiveContainer width="100%" height={380}>
+                        <ComposedChart data={performanceStats} margin={{ top: 20, right: 40, left: 20, bottom: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                            <XAxis 
+                                dataKey="displayDate" 
+                                axisLine={false}
+                                tickLine={false}
+                                padding={{ left: 20, right: 20 }}
+                                tick={{ fill: '#6b7280', fontSize: 12 }}
+                            />
+                            <YAxis 
+                                yAxisId="left" 
+                                orientation="left" 
+                                label={{ value: 'Trips', angle: -90, position: 'insideLeft', offset: 0, fill: '#6366f1' }}
+                                axisLine={false}
+                                tickLine={false}
+                                width={60}
+                                tick={{ fill: '#6366f1' }}
+                            />
+                            <YAxis 
+                                yAxisId="right" 
+                                orientation="right" 
+                                axisLine={false}
+                                tickLine={false}
+                                width={100}
+                                tickMargin={10}
+                                tick={{ fill: '#10b981' }}
+                                tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
+                            />
+                            <Tooltip 
+                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                formatter={(value, name) => [
+                                    name === 'revenue' ? `${new Intl.NumberFormat('vi-VN').format(value)} VND` : value,
+                                    name === 'trips' ? 'Trips Completed' : 'Total Revenue'
+                                ]}
+                            />
+                            <Legend verticalAlign="top" height={36}/>
+                            <Bar 
+                                yAxisId="left" 
+                                dataKey="trips" 
+                                name="trips"
+                                fill="#6366f1" 
+                                radius={[4, 4, 0, 0]} 
+                                barSize={30}
+                            />
+                            <Line 
+                                yAxisId="right" 
+                                type="monotone" 
+                                dataKey="revenue" 
+                                name="revenue"
+                                stroke="#10b981" 
+                                strokeWidth={3}
+                                dot={{ fill: '#10b981', r: 4 }}
+                                activeDot={{ r: 6 }}
+                            />
+                        </ComposedChart>
+                    </ResponsiveContainer>
+                </div>
+
+                <div className="chart-wrapper pie-chart" style={{ flex: '1', minWidth: '300px', background: 'white', padding: '1.5rem', borderRadius: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                    <h3 style={{ marginBottom: '1.5rem' }}>Trip Status distribution</h3>
+                    <ResponsiveContainer width="100%" height={380}>
+                        <PieChart>
+                            <Pie
+                                data={statusDistribution.map(d => ({ ...d, displayCount: d.count === 0 ? 0.0001 : d.count }))}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={100}
+                                paddingAngle={5}
+                                minAngle={5}
+                                dataKey="displayCount"
+                                nameKey="status"
+                                labelLine={false}
+                                label={(props) => {
+                                    const { cx, cy, midAngle, outerRadius, payload, fill } = props;
+                                    if (payload.count === 0) return null;
+                                    const RADIAN = Math.PI / 180;
+                                    const radius = outerRadius + 20;
+                                    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+                                    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+                                    return (
+                                        <text x={x} y={y} fill={fill} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={13} fontWeight={500}>
+                                            {payload.status}
+                                        </text>
+                                    );
+                                }}
+                            >
+                                {statusDistribution.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={
+                                        entry.status === 'completed' ? '#10b981' :
+                                        entry.status === 'scheduled' ? '#6366f1' :
+                                        entry.status === 'cancelled' ? '#ef4444' :
+                                        entry.status === 'on_time' ? '#3b82f6' :
+                                        entry.status === 'delayed' ? '#f59e0b' : '#8b5cf6'
+                                    } />
+                                ))}
+                            </Pie>
+                            <Tooltip formatter={(value, name, props) => [props.payload.count, name]} />
+                            <Legend verticalAlign="bottom" />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+
+            <div className="admin-stats-grid" style={{ marginTop: '2rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
+                <div className="stat-card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', background: 'white', padding: '1.5rem', borderRadius: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                    <div style={{ padding: '1rem', borderRadius: '50%', background: '#eef2ff', color: '#6366f1', fontSize: '1.5rem' }}>📊</div>
+                    <div>
+                        <span style={{ display: 'block', color: '#64748b', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.25rem' }}>Total Monthly Trips</span>
+                        <h3 style={{ margin: 0, fontSize: '1.75rem', color: '#0f172a' }}>{performanceStats.reduce((acc, curr) => acc + curr.trips, 0)}</h3>
+                    </div>
+                </div>
+                <div className="stat-card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', background: 'white', padding: '1.5rem', borderRadius: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                    <div style={{ padding: '1rem', borderRadius: '50%', background: '#ecfdf5', color: '#10b981', fontSize: '1.5rem' }}>💰</div>
+                    <div>
+                        <span style={{ display: 'block', color: '#64748b', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.25rem' }}>Total Monthly Revenue</span>
+                        <h3 style={{ margin: 0, fontSize: '1.5rem', color: '#0f172a' }}>{new Intl.NumberFormat('vi-VN').format(performanceStats.reduce((acc, curr) => acc + curr.revenue, 0))} VND</h3>
+                    </div>
+                </div>
+                <div className="stat-card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', background: 'white', padding: '1.5rem', borderRadius: '1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                    <div style={{ padding: '1rem', borderRadius: '50%', background: '#fffbeb', color: '#f59e0b', fontSize: '1.5rem' }}>📈</div>
+                    <div>
+                        <span style={{ display: 'block', color: '#64748b', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.25rem' }}>Avg. Revenue per Trip</span>
+                        <h3 style={{ margin: 0, fontSize: '1.5rem', color: '#0f172a' }}>
+                            {new Intl.NumberFormat('vi-VN').format(
+                                performanceStats.reduce((acc, curr) => acc + curr.revenue, 0) / 
+                                (performanceStats.reduce((acc, curr) => acc + curr.trips, 0) || 1)
+                            )} VND
+                        </h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+   );
+
    return (
       <div className="operator-dashboard">
          <aside className="sidebar">
@@ -249,6 +444,9 @@ const OperatorDashboard = () => {
                </button>
                <button className={activeTab === 'promotions' ? 'active' : ''} onClick={() => setActiveTab('promotions')}>
                   <i className="fas fa-percentage"></i> Promotions
+               </button>
+               <button className={activeTab === 'performance' ? 'active' : ''} onClick={() => { setActiveTab('performance'); setSelectedRoute(null); }}>
+                  <i className="fas fa-chart-line"></i> Performance
                </button>
                <button className={activeTab === 'trip-detail' ? 'active' : ''} onClick={() => setActiveTab('trip-detail')}>
                   <i className="fas fa-users"></i> Trip Detail
@@ -578,6 +776,8 @@ const OperatorDashboard = () => {
                         <button className="goto-btn" onClick={() => setActiveTab('trips')}>Go to Manage Trips</button>
                      </div>
                   )}
+
+                  {activeTab === "performance" && renderPerformanceDashboard()}
                </div>
             )}
          </main>
