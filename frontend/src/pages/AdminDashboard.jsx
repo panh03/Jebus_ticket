@@ -346,7 +346,15 @@ const AdminDashboard = () => {
                                 paddingAngle={5}
                                 dataKey="count"
                                 nameKey="status"
-                                label={({ name, percent, value }) => value > 0 ? `${name} ${(percent * 100).toFixed(0)}%` : ''}
+                                label={(props) => {
+                                    const { name, percent, x, y, value, index, cx } = props;
+                                    const adjustedY = value === 0 ? y + ((index - 2) * 14) : y;
+                                    return (
+                                        <text x={x} y={adjustedY} fill="#6b7280" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={12}>
+                                            {`${name} ${(percent * 100).toFixed(0)}%`}
+                                        </text>
+                                    );
+                                }}
                             >
                                 {statusDistribution.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={
