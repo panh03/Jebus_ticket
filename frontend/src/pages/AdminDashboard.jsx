@@ -275,7 +275,7 @@ const AdminDashboard = () => {
                 <div className="chart-wrapper main-chart" style={{ flex: '2', minWidth: '600px', background: 'white', padding: '1.5rem', borderRadius: '1rem', boxShadow: 'var(--shadow-sm)' }}>
                     <h3 style={{ marginBottom: '1.5rem' }}>Trip Volume & Revenue Trends</h3>
                     <ResponsiveContainer width="99%" height={380}>
-                        <ComposedChart data={performanceStats}>
+                        <ComposedChart data={performanceStats} margin={{ top: 20, right: 40, left: 20, bottom: 20 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                             <XAxis 
                                 dataKey="displayDate" 
@@ -287,7 +287,7 @@ const AdminDashboard = () => {
                             <YAxis 
                                 yAxisId="left" 
                                 orientation="left" 
-                                label={{ value: 'Trips', angle: -90, position: 'insideLeft', offset: 10, fill: '#6366f1' }}
+                                label={{ value: 'Trips', angle: -90, position: 'insideLeft', offset: 0, fill: '#6366f1' }}
                                 axisLine={false}
                                 tickLine={false}
                                 width={60}
@@ -296,11 +296,11 @@ const AdminDashboard = () => {
                             <YAxis 
                                 yAxisId="right" 
                                 orientation="right" 
-                                label={{ value: 'Revenue (VND)', angle: 90, position: 'insideRight', offset: 10, fill: '#10b981' }}
+                                label={{ value: 'Revenue (VND)', angle: -90, position: 'right', offset: 15, fill: '#10b981' }}
                                 axisLine={false}
                                 tickLine={false}
-                                width={80}
-                                tickMargin={15}
+                                width={100}
+                                tickMargin={10}
                                 tick={{ fill: '#10b981' }}
                                 tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
                             />
