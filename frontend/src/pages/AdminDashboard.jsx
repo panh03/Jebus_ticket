@@ -347,36 +347,6 @@ const AdminDashboard = () => {
                                 minAngle={5}
                                 dataKey="displayCount"
                                 nameKey="status"
-                                label={(props) => {
-                                    const { cx, cy, midAngle, outerRadius, percent, index, payload, fill } = props;
-                                    const RADIAN = Math.PI / 180;
-                                    const sin = Math.sin(-midAngle * RADIAN);
-                                    const cos = Math.cos(-midAngle * RADIAN);
-                                    const sx = cx + outerRadius * cos;
-                                    const sy = cy + outerRadius * sin;
-                                    const mx = cx + (outerRadius + 30) * cos;
-                                    let my = cy + (outerRadius + 30) * sin;
-                                    
-                                    if (payload.count === 0) {
-                                        my += (index - 2) * 18;
-                                    }
-                                    
-                                    const ex = mx + (cos >= 0 ? 1 : -1) * 22;
-                                    const ey = my;
-                                    const textAnchor = cos >= 0 ? 'start' : 'end';
-
-                                    const displayPercent = payload.count === 0 ? 0 : (percent * 100).toFixed(0);
-
-                                    return (
-                                        <g>
-                                            <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
-                                            <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
-                                            <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} fill="#6b7280" textAnchor={textAnchor} dominantBaseline="central" fontSize={12}>
-                                                {`${payload.status} ${displayPercent}%`}
-                                            </text>
-                                        </g>
-                                    );
-                                }}
                             >
                                 {statusDistribution.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={
