@@ -385,10 +385,10 @@ const getPerformanceStats = async (req, res) => {
 
     // 3. Get trip status distribution for Pie Chart
     const [statusData] = await db.query(`
-      SELECT status, COUNT(*) as count
+      SELECT LOWER(status) as status, COUNT(*) as count
       FROM trip_instances
       WHERE departure_datetime BETWEEN ? AND ?
-      GROUP BY status
+      GROUP BY LOWER(status)
     `, [startDate, endDate]);
 
     const defaultStatuses = ['scheduled', 'on_time', 'delayed', 'cancelled', 'completed'];
@@ -396,7 +396,7 @@ const getPerformanceStats = async (req, res) => {
         const found = statusData.find(s => s.status === status);
         return {
             status,
-            count: found ? found.count : 0
+            count: found ? Number(found.count) : 0
         };
     });
 
