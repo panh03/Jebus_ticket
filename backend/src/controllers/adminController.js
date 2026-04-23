@@ -391,9 +391,24 @@ const getPerformanceStats = async (req, res) => {
       GROUP BY status
     `, [startDate, endDate]);
 
+    const defaultStatuses = ['scheduled', 'on_time', 'delayed', 'cancelled', 'completed'];
+    const completeStatusData = defaultStatuses.map(status => {
+        const found = statusData.find(s => s.status === status);
+        return {
+            status,
+            count: found ? found.count : 0
+        };
+    });
+
+    statusData.forEach(s => {
+        if (!defaultStatuses.includes(s.status)) {
+            completeStatusData.push({ status: s.status, count: s.count });
+        }
+    });
+
     res.json({
         stats,
-        statusDistribution: statusData
+        statusDistribution: completeStatusData
     });
   } catch (error) {
     console.error('SERVER ERROR (getPerformanceStats):', error);

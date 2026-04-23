@@ -353,7 +353,9 @@ const AdminDashboard = () => {
                                         entry.status === 'completed' ? '#10b981' :
                                         entry.status === 'scheduled' ? '#6366f1' :
                                         entry.status === 'cancelled' ? '#ef4444' :
-                                        ['#f59e0b', '#8b5cf6', '#ec4899'][index % 3]
+                                        entry.status === 'on_time' ? '#3b82f6' :
+                                        entry.status === 'delayed' ? '#f59e0b' :
+                                        '#8b5cf6'
                                     } />
                                 ))}
                             </Pie>
