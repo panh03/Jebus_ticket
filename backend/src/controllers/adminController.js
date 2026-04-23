@@ -358,12 +358,13 @@ const getPerformanceStats = async (req, res) => {
       ORDER BY date ASC
     `, [startDate, endDate]);
 
-    // 2. Get daily revenue (based on booking time)
+    // 2. Get daily revenue (based on departure time)
     const [revenueData] = await db.query(`
-      SELECT DATE_FORMAT(booking_time, '%Y-%m-%d') as date, SUM(total_price) as total_revenue
-      FROM bookings
-      WHERE status IN ('confirmed', 'completed') 
-      AND booking_time BETWEEN ? AND ?
+      SELECT DATE_FORMAT(ti.departure_datetime, '%Y-%m-%d') as date, SUM(b.total_price) as total_revenue
+      FROM bookings b
+      JOIN trip_instances ti ON b.trip_instance_id = ti.id
+      WHERE b.status IN ('confirmed', 'completed') 
+      AND ti.departure_datetime BETWEEN ? AND ?
       GROUP BY date
       ORDER BY date ASC
     `, [startDate, endDate]);

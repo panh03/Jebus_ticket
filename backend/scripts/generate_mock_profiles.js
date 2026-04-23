@@ -3,8 +3,8 @@ const pool = require('../src/config/db');
 const bcrypt = require('bcrypt');
 
 //const API_BASE = 'http://localhost:5000/api';
-const API_BASE = 'https://jebus-ticket-be.vercel.app/api';
-
+require("dotenv").config();
+const API_BASE =  process.env.ENV == 'local' ? 'https://localhost:5000/api' : 'https://jebus-ticket-be.vercel.app/api';
 
 async function generateMockData() {
   let connection;
