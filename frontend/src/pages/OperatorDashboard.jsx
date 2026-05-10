@@ -39,6 +39,27 @@ const OperatorDashboard = () => {
       route_id: "", bus_info: "", capacity: 36, departs_at: "", arrives_at: "", price_multiplier: 1.0, status: "scheduled", repeat_7_days: false
    });
 
+   // Helper for date/time formatting to avoid browser timezone shifts
+   const formatTime12h = (dateStr) => {
+      if (!dateStr) return '';
+      let timePart = typeof dateStr === 'string' ? dateStr : new Date(dateStr).toISOString();
+      if (timePart.includes(' ')) timePart = timePart.split(' ')[1];
+      else if (timePart.includes('T')) timePart = timePart.split('T')[1];
+      const [h, m] = timePart.split(':');
+      const hours = parseInt(h, 10);
+      const suffix = hours >= 12 ? 'PM' : 'AM';
+      const hours12 = ((hours + 11) % 12 + 1);
+      return `${hours12}:${m} ${suffix}`;
+   };
+
+   const formatDateStr = (dateStr) => {
+      if (!dateStr) return '';
+      if (typeof dateStr === 'string') {
+         return dateStr.split(' ')[0].split('T')[0]; // simple YYYY-MM-DD
+      }
+      return new Date(dateStr).toLocaleDateString();
+   };
+
    // Helper for auth headers
    const getAuthHeader = () => {
       const token = localStorage.getItem("token");
@@ -237,8 +258,8 @@ const OperatorDashboard = () => {
          route_id: trip.route_id,
          bus_info: trip.bus_info,
          capacity: trip.capacity,
-         departs_at: new Date(trip.departure_datetime).toISOString().slice(0, 16),
-         arrives_at: new Date(trip.arrival_datetime).toISOString().slice(0, 16),
+         departs_at: (typeof trip.departure_datetime === 'string' ? trip.departure_datetime : new Date(trip.departure_datetime).toISOString()).replace(' ', 'T').replace('Z', '').slice(0, 16),
+         arrives_at: (typeof trip.arrival_datetime === 'string' ? trip.arrival_datetime : new Date(trip.arrival_datetime).toISOString()).replace(' ', 'T').replace('Z', '').slice(0, 16),
          price_multiplier: trip.price_multiplier,
          status: trip.status,
          repeat_7_days: false
@@ -536,13 +557,13 @@ const OperatorDashboard = () => {
                                              <span className="cap">{trip.capacity} seats</span>
                                           </div>
                                        </td>
-                                       <td>{new Date(trip.departure_datetime).toLocaleDateString()}</td>
-                                       <td>{new Date(trip.arrival_datetime).toLocaleDateString()}</td>
+                                       <td>{formatDateStr(trip.departure_datetime)}</td>
+                                       <td>{formatDateStr(trip.arrival_datetime)}</td>
                                        <td>
                                           <div className="time-range">
-                                             <span>{trip.departure_time}</span>
+                                             <span>{formatTime12h(trip.departure_datetime)}</span>
                                              <i className="fas fa-minus"></i>
-                                             <span>{trip.arrival_time}</span>
+                                             <span>{formatTime12h(trip.arrival_datetime)}</span>
                                           </div>
                                        </td>
                                        <td>

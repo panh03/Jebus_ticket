@@ -409,3 +409,219 @@
         max-width: 100%;
     }
 }
+
+/* --- Points System Styles --- */
+
+.point-toast {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #f6e05e 0%, #ecc94b 100%);
+    color: #744210;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-weight: 700;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 1000;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translate(-50%, -20px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+.animate-slide-down { animation: slideDown 0.4s ease-out forwards; }
+
+.gold-coin {
+    color: #ecc94b;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.points-earned-display {
+    background: rgba(255,255,255,0.2);
+    padding: 8px 16px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.points-text {
+    font-weight: 700;
+}
+
+.amount-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+}
+.original-amount .value {
+    font-weight: 600;
+    color: #4a5568;
+    text-decoration: line-through;
+}
+.original-amount .label {
+    text-transform: none;
+    color: #718096;
+}
+.final-amount {
+    margin-top: 16px;
+    border-top: 1px dashed #cbd5e0;
+    padding-top: 16px;
+}
+
+.redemption-widget {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px;
+    margin: 16px 0;
+    text-align: left;
+    transition: all 0.3s;
+}
+
+.redemption-widget.locked {
+    filter: grayscale(1);
+    opacity: 0.7;
+}
+
+.widget-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.widget-title {
+    font-weight: 700;
+    color: #2d3748;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.balance-info {
+    font-size: 0.85rem;
+    color: #718096;
+    background: #f7fafc;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.locked-message {
+    font-size: 0.85rem;
+    color: #e53e3e;
+}
+
+.redemption-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.switch-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+}
+
+.switch-wrapper input {
+    display: none;
+}
+
+.slider {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background-color: #cbd5e0;
+    border-radius: 24px;
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    border-radius: 50%;
+    transition: .4s;
+}
+
+input:checked + .slider {
+    background-color: #ecc94b;
+}
+
+input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
+.switch-label {
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.points-input-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f7fafc;
+    padding: 12px;
+    border-radius: 8px;
+}
+
+.input-wrapper {
+    display: flex;
+    align-items: center;
+    background: white;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    padding: 4px 8px;
+}
+
+.input-wrapper input {
+    width: 60px;
+    border: none;
+    outline: none;
+    font-weight: 700;
+    color: #2d3748;
+    text-align: right;
+    font-size: 1rem;
+}
+
+.input-wrapper .suffix {
+    margin-left: 4px;
+    color: #718096;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.instant-deduction {
+    font-weight: 700;
+    color: #38a169;
+}
+
+.price-total.discount .label {
+    color: #e53e3e;
+}
+.price-total.discount .value {
+    color: #e53e3e;
+    font-size: 1.25rem;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-in;
+}

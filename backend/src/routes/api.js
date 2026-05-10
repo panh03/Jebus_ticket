@@ -3,6 +3,7 @@ const router = express.Router();
 const authController = require("../controllers/authController");
 const tripController = require("../controllers/tripController");
 const bookingController = require("../controllers/bookingController");
+const pointsController = require("../controllers/pointsController");
 
 const { authMiddleware, isOperator, isAdmin, optionalAuth } = require("../middleware/authMiddleware");
 const operatorController = require("../controllers/operatorController");
@@ -30,6 +31,10 @@ router.post("/bookings", authMiddleware, bookingController.create);
 router.get("/bookings/user/:userId", authMiddleware, bookingController.getUserBookings);
 router.post("/bookings/:id/cancel", authMiddleware, bookingController.cancel);
 router.post("/bookings/:id/cancel-request", authMiddleware, bookingController.cancelRequest);
+
+// Points
+router.get("/points", authMiddleware, pointsController.getUserPoints);
+router.get("/points/history", authMiddleware, pointsController.getPointsHistory);
 
 // Operator Management (Operator Side)
 router.get("/operator/promotions", authMiddleware, isOperator, operatorController.getPromotions);

@@ -4,29 +4,131 @@
   padding: 3rem 1.5rem;
 }
 
-.profile-header {
-  margin-bottom: 3rem;
-  border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 2rem;
-}
-
-.profile-header h1 {
+.profile-page-header h1 {
   font-size: 2.5rem;
   font-weight: 800;
-  color: #1e293b;
-  margin-bottom: 1rem;
+  color: #0f172a;
+  margin-bottom: 0.25rem;
 }
 
-.user-summary {
-  display: flex;
+.profile-page-header .subtitle {
+  color: #64748b;
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+}
+
+.profile-dashboard-layout {
+  display: grid;
+  grid-template-columns: 350px 1fr;
   gap: 2rem;
-  color: #475569;
-  font-size: 1.125rem;
+  margin-bottom: 3rem;
 }
 
-.user-summary strong {
+@media (max-width: 900px) {
+  .profile-dashboard-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Profile Card */
+.profile-card {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-card-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.avatar-circle {
+  width: 80px;
+  height: 80px;
+  background: #0f172a;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.profile-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.profile-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  flex: 1;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.info-item i {
+  width: 40px;
+  height: 40px;
+  background: #f8fafc;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  font-size: 1.1rem;
+}
+
+.info-item div {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748b;
+  letter-spacing: 0.05em;
+}
+
+.info-val {
+  font-size: 1rem;
   color: #1e293b;
-  font-weight: 600;
+  font-weight: 500;
+}
+
+.edit-profile-btn {
+  width: 100%;
+  padding: 0.875rem;
+  background: white;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  color: #0f172a;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  font-size: 0.875rem;
+}
+
+.edit-profile-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
 }
 
 .bookings-section h2 {
@@ -39,6 +141,9 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  width: 100%; 
+  padding: 0;
+  
 }
 
 .booking-card {
@@ -48,6 +153,10 @@
   padding: 2rem;
   position: relative;
   transition: all 0.2s ease;
+  box-sizing: border-box; 
+  width: 100% !important; /* Dùng !important để ghi đè style inline trong React */
+  box-sizing: border-box !important;
+  max-width: none;
 }
 
 .booking-card:hover {
@@ -148,4 +257,291 @@
 .booking-id {
   color: #94a3b8;
   font-size: 0.875rem;
+}
+
+/* --- Loyalty Points Dashboard --- */
+
+.wallet-card {
+  background: #040405;
+  border-radius: 1rem;
+  padding: 2.5rem;
+  color: white;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.wallet-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: radial-gradient(circle at top right, rgba(255,215,0,0.1) 0%, rgba(15,23,42,0) 50%);
+  pointer-events: none;
+}
+
+.wallet-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  position: relative;
+  z-index: 2;
+}
+
+.wallet-title-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.wallet-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #334155;
+  margin: 0;
+}
+
+.wallet-icon {
+  font-size: 2rem;
+  color: #fbbf24;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: none;
+}
+
+.status-badge.inactive {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+.status-badge.inactive i {
+  color: #ef4444;
+  font-size: 0.5rem;
+}
+
+.status-badge.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+.status-badge.active i {
+  color: #10b981;
+  font-size: 0.5rem;
+}
+
+.info-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 0.25rem;
+}
+
+.wallet-balance-info {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  position: relative;
+  z-index: 2;
+}
+
+.wallet-balance-value {
+  font-size: 4rem;
+  font-weight: 600;
+  color: #fbbf24;
+  line-height: 1;
+}
+
+.wallet-balance-label {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  margin-top: 0;
+}
+
+.wallet-equivalent-value {
+  font-size: 0.9rem;
+  color: #475569;
+  margin-bottom: 3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  z-index: 2;
+  background: none;
+  padding: 0;
+}
+
+.progress-section {
+  position: relative;
+  z-index: 2;
+  margin-top: auto;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+.progress-percentage {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #334155;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #fbbf24;
+  border-radius: 3px;
+}
+
+.progress-text {
+  font-size: 0.875rem;
+  color: #475569;
+  margin-top: 0;
+}
+
+.points-rules-popup {
+  margin-top: 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1.5rem;
+  border-radius: 1rem;
+  backdrop-filter: blur(10px);
+}
+
+.points-rules-popup ul {
+  margin-top: 0.5rem;
+  margin-left: 1.5rem;
+  color: #e2e8f0;
+}
+
+.transaction-history {
+  margin-top: 2rem;
+  background: white;
+  border-radius: 1.5rem;
+  padding: 2rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.transaction-history h3 {
+  font-size: 1.25rem;
+  color: #1e293b;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 1rem;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 1rem;
+}
+
+.history-row {
+  display: flex;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.history-row:last-child {
+  border-bottom: none;
+}
+
+.tx-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  margin-right: 1rem;
+}
+
+.text-green { color: #10b981; }
+.text-red { color: #ef4444; }
+
+.tx-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.tx-title {
+  font-weight: 600;
+  color: #334155;
+}
+
+.tx-time {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin-top: 0.25rem;
+}
+
+.tx-quantity {
+  font-weight: 800;
+  font-size: 1.125rem;
+}
+
+.tx-quantity.positive { color: #10b981; }
+.tx-quantity.negative { color: #ef4444; }
+
+/* --- Inner Content Grid (Booking Card) --- */
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  font-weight: 600;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.info-value {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 1.05rem;
+}
+
+@media (max-width: 768px) {
+  .info-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
 }

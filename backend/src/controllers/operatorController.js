@@ -299,6 +299,9 @@ const operatorController = {
 
       // 3. If approved, cancel booking and free seats
       if (status === 'approved') {
+        const [bookingRows] = await connection.execute("SELECT user_id, points_used, points_earned FROM bookings WHERE id = ?", [bookingId]);
+        const booking = bookingRows[0];
+
         await connection.execute(
           "UPDATE bookings SET status = 'cancelled', cancelled_at = NOW(), cancelled_by = 'operator' WHERE id = ?",
           [bookingId]
@@ -311,6 +314,18 @@ const operatorController = {
         );
         for (const detail of details) {
           await connection.execute("UPDATE seats SET status = 'available' WHERE id = ?", [detail.seat_id]);
+        }
+
+        // Refund points used
+        if (booking.points_used > 0) {
+          await connection.execute('UPDATE users SET total_points = total_points + ? WHERE id = ?', [booking.points_used, booking.user_id]);
+          await connection.execute('INSERT INTO points_history (user_id, transaction_type, amount, description, booking_id) VALUES (?, "refunded", ?, "Refunded from operator cancellation", ?)', [booking.user_id, booking.points_used, bookingId]);
+        }
+
+        // Revoke points earned
+        if (booking.points_earned > 0) {
+          await connection.execute('UPDATE users SET total_points = GREATEST(0, total_points - ?) WHERE id = ?', [booking.points_earned, booking.user_id]);
+          await connection.execute('INSERT INTO points_history (user_id, transaction_type, amount, description, booking_id) VALUES (?, "revoked", ?, "Revoked from operator cancellation", ?)', [booking.user_id, booking.points_earned, bookingId]);
         }
       }
 
@@ -413,14 +428,20 @@ const operatorController = {
       const createdIds = [];
 
       for (let day = 0; day < numInstances; day++) {
-        // Calculate dates for this instance
-        const d_at = new Date(departs_at);
-        const a_at = new Date(arrives_at);
+        // Calculate dates for this instance without shifting time
+        let [d_date, d_time] = departs_at.split('T');
+        let [a_date, a_time] = arrives_at.split('T');
+        
+        let d_at = new Date(`${d_date}T00:00:00`);
+        let a_at = new Date(`${a_date}T00:00:00`);
         d_at.setDate(d_at.getDate() + day);
         a_at.setDate(a_at.getDate() + day);
 
-        const iso_departs = d_at.toISOString().slice(0, 19).replace('T', ' ');
-        const iso_arrives = a_at.toISOString().slice(0, 19).replace('T', ' ');
+        const pad = n => n.toString().padStart(2, '0');
+        const formatLocal = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+
+        const iso_departs = `${formatLocal(d_at)} ${d_time}:00`;
+        const iso_arrives = `${formatLocal(a_at)} ${a_time}:00`;
 
         // Link/Create schedule
         let [schedules] = await connection.execute(

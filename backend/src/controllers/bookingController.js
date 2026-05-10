@@ -12,7 +12,37 @@ const bookingController = {
       connection = await pool.getConnection();
       await connection.beginTransaction();
 
-      const { trip_instance_id, seat_ids, total_price, payment_method, pickup_point, dropoff_point } = req.body;
+      const { trip_instance_id, seat_ids, total_price, payment_method, pickup_point, dropoff_point, points_used = 0 } = req.body;
+
+      // Check current points and calculate max redeemable
+      const [userRows] = await connection.execute("SELECT total_points FROM users WHERE id = ?", [req.user.id]);
+      const currentPoints = userRows[0].total_points || 0;
+
+      // For validation, we need the original ticket value. Assuming total_price is the final cash amount.
+      // So original value = total_price + points_used * 10000;
+      const originalValue = total_price + points_used * 10000;
+
+      if (points_used > 0) {
+        if (currentPoints < 10) throw new Error("Minimum balance of 10 points required to unlock redemption");
+        if (points_used < 5) throw new Error("Minimum redemption is 5 points");
+        if (points_used > 10) throw new Error("Maximum redemption is 10 points");
+        if (points_used * 10000 > originalValue * 0.5) throw new Error("Cannot redeem points for more than 50% of the ticket value");
+
+        const [reservedRows] = await connection.execute(
+          `SELECT SUM(b.points_earned) as reserved 
+           FROM bookings b 
+           JOIN trip_instances ti ON b.trip_instance_id = ti.id 
+           WHERE b.user_id = ? AND b.status IN ('confirmed') AND ti.departure_datetime > NOW()`,
+          [req.user.id]
+        );
+        const reservedPoints = reservedRows[0].reserved || 0;
+        const maxRedeemable = currentPoints - reservedPoints;
+        if (points_used > maxRedeemable) {
+          throw new Error(`Exceeds maximum redeemable points (Reserved for upcoming trips). Max available: ${maxRedeemable}`);
+        }
+      }
+
+      const points_earned = seat_ids.length;
 
       // 1. Check if seats are available
       const [seats] = await connection.query(
@@ -26,8 +56,8 @@ const bookingController = {
 
       // 2. Create booking
       const [bookingResult] = await connection.execute(
-        "INSERT INTO bookings (user_id, trip_instance_id, total_price, status, pickup_point, dropoff_point) VALUES (?, ?, ?, 'pending', ?, ?)",
-        [req.user.id, trip_instance_id, total_price, pickup_point, dropoff_point]
+        "INSERT INTO bookings (user_id, trip_instance_id, total_price, status, pickup_point, dropoff_point, points_earned, points_used) VALUES (?, ?, ?, 'pending', ?, ?, ?, ?)",
+        [req.user.id, trip_instance_id, total_price, pickup_point, dropoff_point, points_earned, points_used]
       );
       const bookingId = bookingResult.insertId;
 
@@ -54,6 +84,29 @@ const bookingController = {
         "UPDATE bookings SET status = 'confirmed', paid_at = NOW() WHERE id = ?",
         [bookingId]
       );
+
+      // 6. Update user points
+      if (points_used > 0) {
+        await connection.execute(
+          "UPDATE users SET total_points = total_points - ? WHERE id = ?",
+          [points_used, req.user.id]
+        );
+        await connection.execute(
+          "INSERT INTO points_history (user_id, transaction_type, amount, description, booking_id) VALUES (?, 'redeemed', ?, ?, ?)",
+          [req.user.id, points_used, `Redeemed for ticket #${bookingId}`, bookingId]
+        );
+      }
+      
+      if (points_earned > 0) {
+        await connection.execute(
+          "UPDATE users SET total_points = total_points + ? WHERE id = ?",
+          [points_earned, req.user.id]
+        );
+        await connection.execute(
+          "INSERT INTO points_history (user_id, transaction_type, amount, description, booking_id) VALUES (?, 'earned', ?, ?, ?)",
+          [req.user.id, points_earned, `Earned from ticket #${bookingId}`, bookingId]
+        );
+      }
 
       await connection.commit();
       res.status(201).json({ message: "Booking confirmed", bookingId });
@@ -94,6 +147,17 @@ const bookingController = {
         throw new Error("Direct cancellation only allowed more than 24 hours before departure");
       }
 
+      // Check points revocation logic
+      const [userRows] = await connection.execute("SELECT total_points FROM users WHERE id = ?", [booking.user_id]);
+      const currentPoints = userRows[0].total_points || 0;
+      
+      const pointsToRevoke = booking.points_earned;
+      const pointsToRefund = booking.points_used;
+      
+      if (currentPoints < pointsToRevoke) {
+        throw new Error(`Insufficient points to cancel this ticket (${pointsToRevoke} point required for revocation). Please contact our hotline for assistance.`);
+      }
+
       // Update booking
       await connection.execute(
         "UPDATE bookings SET status = 'cancelled', cancelled_at = NOW(), cancelled_by = 'user' WHERE id = ?",
@@ -104,6 +168,29 @@ const bookingController = {
       const [details] = await connection.execute("SELECT seat_id FROM booking_details WHERE booking_id = ?", [id]);
       for (const detail of details) {
         await connection.execute("UPDATE seats SET status = 'available' WHERE id = ?", [detail.seat_id]);
+      }
+
+      // Refund & Revoke Points
+      if (pointsToRefund > 0) {
+        await connection.execute(
+          "UPDATE users SET total_points = total_points + ? WHERE id = ?",
+          [pointsToRefund, booking.user_id]
+        );
+        await connection.execute(
+          "INSERT INTO points_history (user_id, transaction_type, amount, description, booking_id) VALUES (?, 'refunded', ?, ?, ?)",
+          [booking.user_id, pointsToRefund, `Refunded from ticket #${id}`, id]
+        );
+      }
+      
+      if (pointsToRevoke > 0) {
+        await connection.execute(
+          "UPDATE users SET total_points = total_points - ? WHERE id = ?",
+          [pointsToRevoke, booking.user_id]
+        );
+        await connection.execute(
+          "INSERT INTO points_history (user_id, transaction_type, amount, description, booking_id) VALUES (?, 'revoked', ?, ?, ?)",
+          [booking.user_id, pointsToRevoke, `Revoked from ticket #${id}`, id]
+        );
       }
 
       await connection.commit();

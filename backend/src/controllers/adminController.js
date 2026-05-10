@@ -230,7 +230,7 @@ const deleteTrip = async (req, res) => {
     await connection.beginTransaction();
 
     // Get bookings to notify/refund
-    const [bookings] = await connection.query('SELECT id, total_price, user_id FROM bookings WHERE trip_instance_id = ? AND status IN ("pending", "confirmed")', [id]);
+    const [bookings] = await connection.query('SELECT id, total_price, user_id, points_used, points_earned FROM bookings WHERE trip_instance_id = ? AND status IN ("pending", "confirmed")', [id]);
 
     for (const booking of bookings) {
       // Create refund record
@@ -240,6 +240,18 @@ const deleteTrip = async (req, res) => {
       );
       // Update booking status
       await connection.query('UPDATE bookings SET status = "refunded", cancelled_by = "admin", cancellation_reason = "Trip deleted" WHERE id = ?', [booking.id]);
+
+      // Refund points used
+      if (booking.points_used > 0) {
+        await connection.query('UPDATE users SET total_points = total_points + ? WHERE id = ?', [booking.points_used, booking.user_id]);
+        await connection.query('INSERT INTO points_history (user_id, transaction_type, amount, description, booking_id) VALUES (?, "refunded", ?, "Refunded from trip deletion by Admin", ?)', [booking.user_id, booking.points_used, booking.id]);
+      }
+
+      // Revoke points earned
+      if (booking.points_earned > 0) {
+        await connection.query('UPDATE users SET total_points = GREATEST(0, total_points - ?) WHERE id = ?', [booking.points_earned, booking.user_id]);
+        await connection.query('INSERT INTO points_history (user_id, transaction_type, amount, description, booking_id) VALUES (?, "revoked", ?, "Revoked from trip deletion by Admin", ?)', [booking.user_id, booking.points_earned, booking.id]);
+      }
     }
 
     // Delete trip

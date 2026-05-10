@@ -64,20 +64,67 @@ const TripDetail = () => {
     });
   };
 
+  const sortSeats = (seatsArr) => {
+    return [...seatsArr].sort((a, b) => 
+      a.seat_number.localeCompare(b.seat_number, undefined, { numeric: true })
+    );
+  };
+
+  const lowerDeck = sortSeats(seats.filter(s => s.seat_number.startsWith('A')));
+  const upperDeck = sortSeats(seats.filter(s => s.seat_number.startsWith('B')));
+
   return (
     <div className="trip-detail container">
       <div className="seat-viewer">
         <h2>Select Your Seats</h2>
-        <div className="seat-grid">
-          {seats.map(seat => (
-            <div 
-              key={seat.id} 
-              className={`seat ${seat.status} ${selectedSeats.includes(seat.id) ? 'selected' : ''}`}
-              onClick={() => seat.status === 'available' && toggleSeat(seat.id)}
-            >
-              {seat.seat_number}
+        <div className="seat-selection-area">
+          <div className="decks-container">
+            <div className="deck">
+              <h3>Lower Deck</h3>
+              <div className="deck-grid">
+                {lowerDeck.map(seat => (
+                  <div 
+                    key={seat.id} 
+                    className={`seat ${seat.status} ${selectedSeats.includes(seat.id) ? 'selected' : ''}`}
+                    onClick={() => seat.status === 'available' && toggleSeat(seat.id)}
+                  >
+                    {seat.seat_number}
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
+            
+            <div className="deck">
+              <h3>Upper Deck</h3>
+              <div className="deck-grid">
+                {upperDeck.map(seat => (
+                  <div 
+                    key={seat.id} 
+                    className={`seat ${seat.status} ${selectedSeats.includes(seat.id) ? 'selected' : ''}`}
+                    onClick={() => seat.status === 'available' && toggleSeat(seat.id)}
+                  >
+                    {seat.seat_number}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="legend-panel">
+            <h3>Legend</h3>
+            <div className="legend-item">
+              <div className="seat-indicator available"></div>
+              <span>Available</span>
+            </div>
+            <div className="legend-item">
+              <div className="seat-indicator booked"></div>
+              <span>Sold</span>
+            </div>
+            <div className="legend-item">
+              <div className="seat-indicator selected"></div>
+              <span>Selected</span>
+            </div>
+          </div>
         </div>
       </div>
 

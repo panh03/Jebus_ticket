@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import axios from "axios";
@@ -15,6 +15,47 @@ const Payment = () => {
     const [isSuccess, setIsSuccess] = useState(false);
     const [bookingData, setBookingData] = useState(null);
 
+    // Points system states
+    const [userPoints, setUserPoints] = useState({ total_points: 0, max_redeemable: 0 });
+    const [usePoints, setUsePoints] = useState(location.state?.initialUsePoints || false);
+    const [pointsToSpend, setPointsToSpend] = useState(0);
+    const [showToast, setShowToast] = useState(false);
+
+    useEffect(() => {
+        const fetchPoints = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/points`);
+                setUserPoints(response.data);
+            } catch (error) {
+                console.error("Error fetching points:", error);
+            }
+        };
+        if (user) fetchPoints();
+    }, [user]);
+
+    const maxUsableForTrip = Math.min(
+        10, 
+        userPoints.max_redeemable, 
+        Math.floor((totalPrice * 0.5) / 10000)
+    );
+    const canRedeem = userPoints.total_points >= 10 && maxUsableForTrip >= 5;
+
+    useEffect(() => {
+        if (usePoints) {
+            setPointsToSpend(maxUsableForTrip);
+        } else {
+            setPointsToSpend(0);
+        }
+    }, [usePoints, maxUsableForTrip]);
+
+    const handlePointsChange = (e) => {
+        let val = parseInt(e.target.value) || 0;
+        if (val > maxUsableForTrip) val = maxUsableForTrip;
+        setPointsToSpend(val);
+    };
+
+    const finalPrice = usePoints ? totalPrice - (pointsToSpend * 10000) : totalPrice;
+
     if (!trip) {
         navigate("/");
         return null;
@@ -27,14 +68,21 @@ const Payment = () => {
                 user_id: user.id,
                 trip_instance_id: trip.id,
                 seat_ids: selectedSeatIds,
-                total_price: totalPrice,
+                total_price: finalPrice,
                 payment_method: paymentMethod,
                 pickup_point: pickup,
-                dropoff_point: dropoff
+                dropoff_point: dropoff,
+                points_used: usePoints ? pointsToSpend : 0
             });
 
             setBookingData(response.data);
             setIsSuccess(true);
+            setShowToast(true);
+            
+            // Auto hide toast
+            setTimeout(() => {
+                setShowToast(false);
+            }, 3000);
         } catch (error) {
             console.error("Payment error response:", error.response?.data);
             const detailedError = error.response?.data?.error || "";
@@ -47,10 +95,20 @@ const Payment = () => {
     if (isSuccess) {
         return (
             <div className="payment-container">
+                {showToast && (
+                    <div className="point-toast animate-slide-down">
+                        <i className="fas fa-coins"></i>
+                        <span>Successfully earned {selectedSeats.length} point{selectedSeats.length > 1 ? 's' : ''}! Total balance: {userPoints.total_points + selectedSeats.length - (usePoints ? pointsToSpend : 0)} points.</span>
+                    </div>
+                )}
                 <div className="ticket-detail-card animate-scale-up">
                     <div className="success-badge">
                         <i className="fas fa-check-circle"></i>
                         <h2>Payment Successful!</h2>
+                        <div className="points-earned-display">
+                            <i className="fas fa-coins gold-coin"></i>
+                            <span className="points-text">+{selectedSeats.length} point{selectedSeats.length > 1 ? 's' : ''} earned from this trip!</span>
+                        </div>
                         <p>Your ticket has been confirmed. Please show this to the driver.</p>
                     </div>
 
@@ -86,9 +144,25 @@ const Payment = () => {
                                     <span className="label">Route</span>
                                     <span className="value">{trip.from} &rarr; {trip.to}</span>
                                 </div>
-                                <div className="info-item">
+                                <div className="detail-row">
                                     <span className="label">Departure</span>
-                                    <span className="value">{new Date(trip.departure).toLocaleString()}</span>
+                                    <span className="value">{
+                                        (() => {
+                                            const dateStr = trip.departure;
+                                            if (!dateStr) return '';
+                                            let str = typeof dateStr === 'string' ? dateStr : new Date(dateStr).toISOString();
+                                            const datePart = str.split('T')[0].split(' ')[0];
+                                            let timePart = str;
+                                            if (timePart.includes(' ')) timePart = timePart.split(' ')[1];
+                                            else if (timePart.includes('T')) timePart = timePart.split('T')[1];
+                                            const [h, m] = timePart.split(':');
+                                            const hours = parseInt(h, 10);
+                                            const suffix = hours >= 12 ? 'PM' : 'AM';
+                                            const hours12 = ((hours + 11) % 12 + 1);
+                                            const padH = String(hours12).padStart(2, '0');
+                                            return `${datePart} ${padH}:${m} ${suffix}`;
+                                        })()
+                                    }</span>
                                 </div>
                                 <div className="info-item">
                                     <span className="label">Seats</span>
@@ -116,9 +190,15 @@ const Payment = () => {
                         <div className="ticket-divider"></div>
 
                         <div className="ticket-section price-section">
+                            {usePoints && pointsToSpend > 0 && (
+                                <div className="price-total discount">
+                                    <span className="label">Points Redeemed</span>
+                                    <span className="value">-{pointsToSpend * 10000} VND ({pointsToSpend} pts)</span>
+                                </div>
+                            )}
                             <div className="price-total">
                                 <span className="label">Total Paid</span>
-                                <span className="value">{totalPrice.toLocaleString()} VND</span>
+                                <span className="value">{finalPrice.toLocaleString()} VND</span>
                             </div>
                             <div className="payment-type">
                                 <span className="label">Method:</span>
@@ -150,8 +230,64 @@ const Payment = () => {
 
                 <div className="payment-content">
                     <section className="payment-amount-summary">
-                        <span className="label">Amount to Pay</span>
-                        <h2 className="amount-display">{totalPrice.toLocaleString()} VND</h2>
+                        <div className="amount-row original-amount">
+                            <span className="label">Original Price</span>
+                            <span className="value">{totalPrice.toLocaleString()} VND</span>
+                        </div>
+                        
+                        {/* Redemption Widget */}
+                        <div className={`redemption-widget ${!canRedeem ? 'locked' : 'active'}`}>
+                            <div className="widget-header">
+                                <div className="widget-title">
+                                    <i className="fas fa-coins gold-coin"></i>
+                                    <span>JEBus Points</span>
+                                </div>
+                                <div className="balance-info">
+                                    Balance: {userPoints.total_points} pts
+                                </div>
+                            </div>
+                            
+                            {!canRedeem ? (
+                                <div className="locked-message">
+                                    <p>Need at least 10 points to use this feature (and min. 5 points applicable for this trip).</p>
+                                </div>
+                            ) : (
+                                <div className="redemption-controls">
+                                    <label className="switch-wrapper">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={usePoints} 
+                                            onChange={(e) => setUsePoints(e.target.checked)} 
+                                        />
+                                        <span className="slider round"></span>
+                                        <span className="switch-label">Use JEBus Points</span>
+                                    </label>
+                                    
+                                    {usePoints && (
+                                        <div className="points-input-group animate-fade-in">
+                                            <div className="input-wrapper">
+                                                <input 
+                                                    type="number" 
+                                                    min="5" 
+                                                    max={maxUsableForTrip} 
+                                                    value={pointsToSpend} 
+                                                    onChange={handlePointsChange}
+                                                />
+                                                <span className="suffix">pts</span>
+                                            </div>
+                                            <div className="instant-deduction">
+                                                - {(pointsToSpend * 10000).toLocaleString()} VND
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="amount-row final-amount">
+                            <span className="label">Grand Total</span>
+                            <h2 className="amount-display">{finalPrice.toLocaleString()} VND</h2>
+                        </div>
                     </section>
 
                     <section className="payment-methods">
@@ -227,9 +363,9 @@ const Payment = () => {
                     <button 
                         className={`pay-btn ${isProcessing ? 'loading' : ''}`} 
                         onClick={handlePayment} 
-                        disabled={isProcessing}
+                        disabled={isProcessing || (usePoints && (pointsToSpend < 5 || pointsToSpend > maxUsableForTrip))}
                     >
-                        {isProcessing ? "Processing..." : `Pay ${totalPrice.toLocaleString()} VND`}
+                        {isProcessing ? "Processing..." : `Pay ${finalPrice.toLocaleString()} VND`}
                     </button>
                 </div>
             </div>

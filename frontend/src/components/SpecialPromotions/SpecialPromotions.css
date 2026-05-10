@@ -1,0 +1,121 @@
+.promotions-section {
+  padding: 4rem 1.5rem;
+  background-color: var(--background, #ffffff);
+}
+
+.promotions-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--secondary, #1e293b);
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+.promo-scroll-container {
+  display: flex;
+  gap: 2rem;
+  overflow-x: auto;
+  padding-bottom: 1.5rem;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Custom scrollbar for horizontal scroll */
+.promo-scroll-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.promo-scroll-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.promo-scroll-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.promo-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.promo-card {
+  min-width: 300px;
+  flex: 0 0 calc(33.333% - 1.333rem); /* Show 3 cards on desktop */
+  background: var(--white, #ffffff);
+  border-radius: 1.5rem; /* Match existing radius */
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); /* Match existing shadow */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  scroll-snap-align: start;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.promo-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+}
+
+.promo-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.promo-content {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.promo-card-title {
+  font-size: 1.5rem;
+  color: var(--secondary, #1e293b);
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.promo-card-subtitle {
+  color: var(--text-light, #64748b);
+  font-size: 1.125rem;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+  flex-grow: 1;
+}
+
+.promo-btn {
+  background: transparent;
+  color: var(--primary, #6366f1);
+  border: 1px solid var(--primary, #6366f1);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+  cursor: pointer;
+}
+
+.promo-btn:hover {
+  background: var(--primary, #6366f1);
+  color: var(--white, #ffffff);
+}
+
+@media (max-width: 1024px) {
+  .promo-card {
+    flex: 0 0 calc(50% - 1rem); /* Show 2 cards on tablet */
+  }
+}
+
+@media (max-width: 768px) {
+  .promo-card {
+    flex: 0 0 85%; /* Show 1 card mostly on mobile */
+  }
+}

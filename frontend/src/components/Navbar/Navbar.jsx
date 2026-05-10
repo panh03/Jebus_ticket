@@ -28,7 +28,10 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <div className="container">
-        <Link to="/" className="logo">JEBus<span>Ticket</span></Link>
+        <Link to="/" className="logo">
+          <img src="/logo.svg" alt="JEBus Logo" />
+          JEBus<span>Ticket</span>
+        </Link>
         <ul className="nav-links">
           <li><Link to="/search">Search Trips</Link></li>
           {user ? (

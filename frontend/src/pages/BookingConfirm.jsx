@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import axios from "axios";
 import { AuthContext } from "../context/AuthContext";
 import "./BookingConfirm.css";
 
@@ -12,6 +13,22 @@ const BookingConfirm = () => {
     const [pickup, setPickup] = useState("");
     const [dropoff, setDropoff] = useState("");
 
+    // Points logic
+    const [userPoints, setUserPoints] = useState({ total_points: 0, max_redeemable: 0 });
+    const [usePoints, setUsePoints] = useState(false);
+
+    useEffect(() => {
+        const fetchPoints = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/points`);
+                setUserPoints(response.data);
+            } catch (error) {
+                console.error("Error fetching points:", error);
+            }
+        };
+        if (user) fetchPoints();
+    }, [user]);
+
     useEffect(() => {
         if (!trip || !selectedSeats || selectedSeats.length === 0) {
             navigate("/");
@@ -21,6 +38,16 @@ const BookingConfirm = () => {
     if (!trip) return null;
 
     const totalPrice = trip.price * selectedSeats.length;
+
+    const maxUsableForTrip = Math.min(
+        10, 
+        userPoints.max_redeemable !== undefined ? userPoints.max_redeemable : userPoints.total_points, 
+        Math.floor((totalPrice * 0.5) / 10000)
+    );
+    const canRedeem = userPoints.total_points >= 10 && maxUsableForTrip >= 5;
+    const pointsToSpend = usePoints && canRedeem ? maxUsableForTrip : 0;
+    const pointsDiscount = pointsToSpend * 10000;
+    const finalPrice = totalPrice - pointsDiscount;
 
     const handleConfirm = () => {
         if (!pickup || !dropoff) {
@@ -39,9 +66,25 @@ const BookingConfirm = () => {
                     name: user?.name,
                     email: user?.email,
                     phone: user?.phone
-                }
+                },
+                initialUsePoints: usePoints // Pass to payment if needed
             }
         });
+    };
+
+    const formatDateTime = (dateStr) => {
+        if (!dateStr) return '';
+        let str = typeof dateStr === 'string' ? dateStr : new Date(dateStr).toISOString();
+        const datePart = str.split('T')[0].split(' ')[0];
+        let timePart = str;
+        if (timePart.includes(' ')) timePart = timePart.split(' ')[1];
+        else if (timePart.includes('T')) timePart = timePart.split('T')[1];
+        const [h, m] = timePart.split(':');
+        const hours = parseInt(h, 10);
+        const suffix = hours >= 12 ? 'PM' : 'AM';
+        const hours12 = ((hours + 11) % 12 + 1);
+        const padH = String(hours12).padStart(2, '0');
+        return `${datePart} ${padH}:${m} ${suffix}`;
     };
 
     return (
@@ -65,7 +108,7 @@ const BookingConfirm = () => {
                         </div>
                         <div className="info-row">
                             <span className="label">Departure:</span>
-                            <span className="value">{new Date(trip.departure).toLocaleString()}</span>
+                            <span className="value">{formatDateTime(trip.departure)}</span>
                         </div>
                         <div className="info-row">
                             <span className="label">Seats:</span>
@@ -130,10 +173,34 @@ const BookingConfirm = () => {
                             <span className="label">Quantity:</span>
                             <span className="value">x {selectedSeats.length}</span>
                         </div>
+                        
+                        {/* Loyalty Points Feature */}
+                        <div className="points-feature-container">
+                            <label className={`points-checkbox-label ${!canRedeem ? 'disabled' : ''}`}>
+                                <input 
+                                    type="checkbox" 
+                                    checked={usePoints} 
+                                    onChange={(e) => setUsePoints(e.target.checked)}
+                                    disabled={!canRedeem}
+                                />
+                                <span>Use Points (Balance: {userPoints.total_points} pts)</span>
+                            </label>
+                            {!canRedeem && (
+                                <div className="points-hint">Need at least 10 pts to use (min 5 pts per trip).</div>
+                            )}
+                        </div>
+
+                        {usePoints && pointsToSpend > 0 && (
+                            <div className="info-row discount-row">
+                                <span className="label">Points Discount:</span>
+                                <span className="value discount-value">-{pointsDiscount.toLocaleString()} VND</span>
+                            </div>
+                        )}
+                        
                         <hr />
                         <div className="info-row total">
                             <span className="label">Total Amount:</span>
-                            <span className="value highlight">{totalPrice.toLocaleString()} VND</span>
+                            <span className="value highlight">{finalPrice.toLocaleString()} VND</span>
                         </div>
                     </section>
                 </div>

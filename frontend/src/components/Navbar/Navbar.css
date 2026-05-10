@@ -21,6 +21,14 @@
   font-weight: 800;
   color: #1e293b;
   text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.logo img {
+  width: 32px;
+  height: 32px;
 }
 
 .logo span {

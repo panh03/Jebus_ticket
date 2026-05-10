@@ -8,11 +8,14 @@ const localDB = {
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
+  dateStrings: true,
+  timezone: '+07:00'
 }
 
 const railway =  {
-  uri: process.env.DB_URI
-
+  uri: process.env.DB_URI,
+  dateStrings: true,
+  timezone: '+07:00'
 }
 const db = mysql.createPool(
   isLocal ? localDB : railway

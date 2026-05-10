@@ -36,8 +36,9 @@
 
 .booking-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    align-items: stretch;
 }
 
 .section-card {
@@ -94,6 +95,55 @@
     font-weight: 700;
 }
 
+.points-feature-container {
+    margin: 16px 0 8px 0;
+    padding: 12px;
+    background-color: #f0fff4;
+    border: 1px solid #9ae6b4;
+    border-radius: 6px;
+}
+
+.points-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    color: #2f855a;
+    cursor: pointer;
+}
+
+.points-checkbox-label.disabled {
+    color: #a0aec0;
+    cursor: not-allowed;
+}
+
+.points-checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #48bb78;
+    cursor: inherit;
+}
+
+.points-hint {
+    font-size: 0.75rem;
+    color: #718096;
+    margin-top: 4px;
+    margin-left: 24px;
+}
+
+.discount-row {
+    margin-bottom: 8px;
+}
+
+.discount-row .label {
+    color: #48bb78;
+}
+
+.discount-row .discount-value {
+    color: #38a169;
+    font-weight: 600;
+}
+
 .policy-list {
     padding-left: 20px;
     list-style: square;
@@ -129,39 +179,41 @@
 .booking-actions {
     margin-top: 32px;
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start;
+    align-items: center;
     gap: 16px;
+    width: 100%;
+}
+
+.back-btn, .confirm-btn-final {
+    flex: none;
+    min-width: 180px;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
 }
 
 .back-btn {
-    padding: 12px 24px;
-    border: 1px solid #cbd5e0;
-    border-radius: 6px;
-    background: white;
-    color: #4a5568;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s;
+    background: #e2e8f0;
+    color: #475569;
+    border: none;
 }
 
 .back-btn:hover {
-    background: #f7fafc;
-    border-color: #a0aec0;
+    background: #cbd5e1;
 }
 
 .confirm-btn-final {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 6px;
-    background: #38b2ac;
+    background: #6366f1;
     color: white;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s;
+    border: none;
 }
 
 .confirm-btn-final:hover {
-    background: #319795;
+    background: #4f46e5;
     transform: translateY(-2px);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
@@ -173,4 +225,17 @@
 
 .animate-fade-in {
     animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Responsive Grid for Tablet and Mobile */
+@media (max-width: 1024px) {
+    .booking-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .booking-grid {
+        grid-template-columns: 1fr;
+    }
 }
