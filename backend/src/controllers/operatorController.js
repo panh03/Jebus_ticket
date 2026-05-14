@@ -399,6 +399,7 @@ const operatorController = {
       
       res.status(201).json({ message: "Route created", id: result.insertId });
     } catch (error) {
+      console.error("Error creating route:", error);
       res.status(500).json({ message: "Error creating route", error: error.message });
     }
   },
@@ -425,6 +426,7 @@ const operatorController = {
 
       res.json({ message: "Route updated successfully" });
     } catch (error) {
+      console.error("Error updating route:", error);
       res.status(500).json({ message: "Error updating route", error: error.message });
     }
   },
