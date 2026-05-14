@@ -45,6 +45,7 @@ router.put("/operator/trips/:id", authMiddleware, isOperator, operatorController
 router.delete("/operator/trips/:id", authMiddleware, isOperator, operatorController.deleteTrip);
 router.put("/operator/trips/:id/status", authMiddleware, isOperator, operatorController.updateTripStatus);
 router.get("/operator/routes", authMiddleware, isOperator, operatorController.getRoutes);
+router.get("/operator/routes/:id", authMiddleware, isOperator, operatorController.getRouteById);
 router.post("/operator/routes", authMiddleware, isOperator, operatorController.createRoute);
 router.put("/operator/routes/:id", authMiddleware, isOperator, operatorController.updateRoute);
 router.delete("/operator/routes/:id", authMiddleware, isOperator, operatorController.deleteRoute);

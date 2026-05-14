@@ -190,7 +190,10 @@ const operatorController = {
         SELECT r.*, 
                (SELECT COUNT(*) FROM trip_instances ti 
                 JOIN trip_schedules ts ON ti.schedule_id = ts.id 
-                WHERE ts.route_id = r.id AND ti.status NOT IN ('completed', 'cancelled')) as active_trips
+                WHERE ts.route_id = r.id AND ti.status NOT IN ('completed', 'cancelled')) as active_trips,
+               (SELECT COUNT(*) FROM trip_instances ti 
+                JOIN trip_schedules ts ON ti.schedule_id = ts.id 
+                WHERE ts.route_id = r.id) as total_trips
         FROM routes r 
         WHERE r.operator_id = ? OR r.operator_id IS NULL
         ORDER BY r.created_at DESC
@@ -198,6 +201,21 @@ const operatorController = {
       res.json(routes);
     } catch (error) {
       res.status(500).json({ message: "Error fetching routes", error: error.message });
+    }
+  },
+
+  getRouteById: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const opId = await operatorController.getOperatorId(req.user.id);
+      const [rows] = await pool.execute(
+        "SELECT * FROM routes WHERE id = ? AND (operator_id = ? OR operator_id IS NULL)",
+        [id, opId]
+      );
+      if (rows.length === 0) return res.status(404).json({ message: "Route not found" });
+      res.json(rows[0]);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching route detail", error: error.message });
     }
   },
 
@@ -418,25 +436,38 @@ const operatorController = {
       const { id } = req.params;
       const opId = await operatorController.getOperatorId(req.user.id);
 
-      // Verify ownership ( allow cleanup of global routes for now, or just operator's own )
+      // Verify ownership - MUST be the owner to delete. Global routes (operator_id IS NULL) cannot be deleted by operators.
       const [route] = await connection.execute("SELECT operator_id FROM routes WHERE id = ?", [id]);
       if (route.length === 0) {
          return res.status(404).json({ message: "Route not found" });
       }
 
-      if (route[0].operator_id !== null && route[0].operator_id !== opId) {
+      if (route[0].operator_id === null) {
+         return res.status(403).json({ message: "Global routes can only be managed by administrators" });
+      }
+
+      if (route[0].operator_id !== opId) {
          return res.status(403).json({ message: "Unauthorized to delete this route" });
       }
 
-      // Check for active trips
+      // Check for ANY trips (including completed/cancelled ones) because of FK constraints in bookings
+      // If we want to allow deletion of routes with history, we'd need to CASCADE or SET NULL in bookings,
+      // but usually it's better to block it to preserve data integrity.
       const [trips] = await connection.execute(`
         SELECT ti.id FROM trip_instances ti 
         JOIN trip_schedules ts ON ti.schedule_id = ts.id 
-        WHERE ts.route_id = ? AND ti.status NOT IN ('completed', 'cancelled')
+        WHERE ts.route_id = ?
       `, [id]);
       
       if (trips.length > 0) {
-        return res.status(400).json({ message: "Cannot delete route with active or upcoming trips. Cancel the trips first." });
+        return res.status(400).json({ message: "Cannot delete route with existing trip history. Please deactivate it instead." });
+      }
+
+      // Also check for schedules that might not have instances yet
+      const [schedules] = await connection.execute("SELECT id FROM trip_schedules WHERE route_id = ?", [id]);
+      if (schedules.length > 0) {
+          // If no trip instances exist, we can safely delete schedules then the route
+          await connection.execute("DELETE FROM trip_schedules WHERE route_id = ?", [id]);
       }
 
       await connection.execute("DELETE FROM routes WHERE id = ?", [id]);
@@ -444,6 +475,7 @@ const operatorController = {
       res.json({ message: "Route removed successfully" });
     } catch (error) {
       if (connection) await connection.rollback();
+      console.error("Route Deletion Error:", error);
       res.status(500).json({ message: "Database error during route deletion", error: error.message });
     } finally {
       if (connection) connection.release();

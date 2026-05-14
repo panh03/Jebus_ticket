@@ -669,9 +669,9 @@ const OperatorDashboard = () => {
                                           <i className="fas fa-edit"></i>
                                        </button>
                                        <button 
-                                          className={`delete-icon-btn ${route.active_trips > 0 ? 'disabled-action' : ''}`} 
-                                          onClick={(e) => route.active_trips === 0 && handleDeleteRoute(route.id, e)}
-                                          title={route.active_trips > 0 ? "Cannot delete route with active trips" : "Delete route"}
+                                          className={`delete-icon-btn ${ (route.total_trips > 0 || route.operator_id === null) ? 'disabled-action' : ''}`} 
+                                          onClick={(e) => (route.total_trips === 0 && route.operator_id !== null) && handleDeleteRoute(route.id, e)}
+                                          title={route.operator_id === null ? "Global routes cannot be deleted" : route.total_trips > 0 ? "Cannot delete route with trip history" : "Delete route"}
                                        >
                                           <i className="fas fa-times"></i>
                                        </button>
