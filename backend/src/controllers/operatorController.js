@@ -83,7 +83,9 @@ const operatorController = {
       
       let query = `
         SELECT ti.*, ts.departure_time, ts.arrival_time, ts.price, r.from_city, r.to_city,
-               (SELECT COUNT(*) FROM bookings b WHERE b.trip_instance_id = ti.id AND b.status != 'cancelled') as booking_count
+               (SELECT COUNT(*) FROM booking_details bd 
+                JOIN bookings b ON bd.booking_id = b.id 
+                WHERE b.trip_instance_id = ti.id AND b.status != 'cancelled') as booking_count
         FROM trip_instances ti
         JOIN trip_schedules ts ON ti.schedule_id = ts.id
         JOIN routes r ON ts.route_id = r.id
