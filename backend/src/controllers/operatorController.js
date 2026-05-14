@@ -1,5 +1,29 @@
 const pool = require("../config/db");
 
+const normalizePointList = (value) => {
+  if (Array.isArray(value)) {
+    return value.map(point => String(point).trim()).filter(Boolean);
+  }
+
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed.map(point => String(point).trim()).filter(Boolean);
+      }
+    } catch (error) {
+      // Plain textarea input falls through to newline/comma splitting.
+    }
+
+    return value
+      .split(/\r?\n|,/)
+      .map(point => point.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+};
+
 const operatorController = {
   // Get the operator_id linked to the current user
   getOperatorId: async (userId) => {
@@ -8,7 +32,7 @@ const operatorController = {
       const [rows] = await pool.execute("SELECT id FROM operators WHERE user_id = ?", [userId]);
       if (rows.length > 0) return rows[0].id;
 
-      // Auto-create operator profile if user has 'operator' role
+      //create operator profile if user has 'operator' role
       const [user] = await pool.execute("SELECT name, email, role FROM users WHERE id = ?", [userId]);
       if (user.length > 0 && user[0].role === 'operator') {
          const [result] = await pool.execute(
@@ -343,11 +367,16 @@ const operatorController = {
   createRoute: async (req, res) => {
     try {
       const opId = await operatorController.getOperatorId(req.user.id);
-      const { from_city, to_city, distance, duration, base_price, is_active } = req.body;
+      const { from_city, to_city, distance, duration, base_price, is_active, pickup_points, dropoff_points } = req.body;
+      const pickupList = normalizePointList(pickup_points);
+      const dropoffList = normalizePointList(dropoff_points);
+      if (pickupList.length === 0 || dropoffList.length === 0) {
+        return res.status(400).json({ message: "Pickup and drop-off places are required" });
+      }
       
       const [result] = await pool.execute(
-        "INSERT INTO routes (from_city, to_city, distance, duration, operator_id, base_price, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        [from_city, to_city, distance, duration, opId, base_price, is_active ?? true]
+        "INSERT INTO routes (from_city, to_city, distance, duration, operator_id, base_price, is_active, pickup_points, dropoff_points) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [from_city, to_city, distance, duration, opId, base_price, is_active ?? true, JSON.stringify(pickupList), JSON.stringify(dropoffList)]
       );
       
       res.status(201).json({ message: "Route created", id: result.insertId });
@@ -360,15 +389,20 @@ const operatorController = {
     try {
       const { id } = req.params;
       const opId = await operatorController.getOperatorId(req.user.id);
-      const { from_city, to_city, distance, duration, base_price, is_active } = req.body;
+      const { from_city, to_city, distance, duration, base_price, is_active, pickup_points, dropoff_points } = req.body;
+      const pickupList = normalizePointList(pickup_points);
+      const dropoffList = normalizePointList(dropoff_points);
+      if (pickupList.length === 0 || dropoffList.length === 0) {
+        return res.status(400).json({ message: "Pickup and drop-off places are required" });
+      }
 
       // Verify ownership
       const [route] = await pool.execute("SELECT id FROM routes WHERE id = ? AND operator_id = ?", [id, opId]);
       if (route.length === 0) return res.status(403).json({ message: "Forbidden or route not found" });
 
       await pool.execute(
-        "UPDATE routes SET from_city = ?, to_city = ?, distance = ?, duration = ?, base_price = ?, is_active = ? WHERE id = ?",
-        [from_city, to_city, distance, duration, base_price, is_active, id]
+        "UPDATE routes SET from_city = ?, to_city = ?, distance = ?, duration = ?, base_price = ?, is_active = ?, pickup_points = ?, dropoff_points = ? WHERE id = ?",
+        [from_city, to_city, distance, duration, base_price, is_active, JSON.stringify(pickupList), JSON.stringify(dropoffList), id]
       );
 
       res.json({ message: "Route updated successfully" });

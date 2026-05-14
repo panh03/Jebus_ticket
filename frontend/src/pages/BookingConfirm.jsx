@@ -17,6 +17,18 @@ const BookingConfirm = () => {
     const [userPoints, setUserPoints] = useState({ total_points: 0, max_redeemable: 0 });
     const [usePoints, setUsePoints] = useState(false);
 
+    const parsePointOptions = (value) => {
+        if (!value) return [];
+        if (Array.isArray(value)) return value.filter(Boolean);
+        try {
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed)) return parsed.filter(Boolean);
+        } catch (error) {
+            return String(value).split(/\r?\n|,/).map(point => point.trim()).filter(Boolean);
+        }
+        return [];
+    };
+
     useEffect(() => {
         const fetchPoints = async () => {
             try {
@@ -38,6 +50,8 @@ const BookingConfirm = () => {
     if (!trip) return null;
 
     const totalPrice = trip.price * selectedSeats.length;
+    const pickupOptions = parsePointOptions(trip.pickup_points);
+    const dropoffOptions = parsePointOptions(trip.dropoff_points);
 
     const maxUsableForTrip = Math.min(
         10, 
@@ -136,21 +150,23 @@ const BookingConfirm = () => {
                         <h3><i className="fas fa-map-marker-alt"></i> Journey Details</h3>
                         <div className="input-group">
                             <label>Pickup Point</label>
-                            <select value={pickup} onChange={(e) => setPickup(e.target.value)}>
+                            <select value={pickup} onChange={(e) => setPickup(e.target.value)} disabled={pickupOptions.length === 0}>
                                 <option value="">Select Pickup Point</option>
-                                <option value="Bến xe Miền Đông">Bến xe Miền Đông</option>
-                                <option value="Văn phòng Quận 1">Văn phòng Quận 1</option>
-                                <option value="Ngã tư Hàng Xanh">Ngã tư Hàng Xanh</option>
+                                {pickupOptions.map(point => (
+                                    <option key={point} value={point}>{point}</option>
+                                ))}
                             </select>
+                            {pickupOptions.length === 0 && <small>No pickup places configured for this route.</small>}
                         </div>
                         <div className="input-group">
                             <label>Drop-off Point</label>
-                            <select value={dropoff} onChange={(e) => setDropoff(e.target.value)}>
+                            <select value={dropoff} onChange={(e) => setDropoff(e.target.value)} disabled={dropoffOptions.length === 0}>
                                 <option value="">Select Drop-off Point</option>
-                                <option value="Bến xe Đà Lạt">Bến xe Đà Lạt</option>
-                                <option value="Văn phòng Phan Bội Châu">Văn phòng Phan Bội Châu</option>
-                                <option value="Ngã ba Liên Khương">Ngã ba Liên Khương</option>
+                                {dropoffOptions.map(point => (
+                                    <option key={point} value={point}>{point}</option>
+                                ))}
                             </select>
+                            {dropoffOptions.length === 0 && <small>No drop-off places configured for this route.</small>}
                         </div>
                     </section>
 

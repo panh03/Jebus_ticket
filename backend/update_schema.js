@@ -40,6 +40,14 @@ async function updateSchema() {
       await pool.query("ALTER TABLE routes ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;");
       console.log("✅ Added created_at to routes");
     }
+    if (!routeColNames.includes('pickup_points')) {
+      await pool.query("ALTER TABLE routes ADD COLUMN pickup_points TEXT;");
+      console.log("✅ Added pickup_points to routes");
+    }
+    if (!routeColNames.includes('dropoff_points')) {
+      await pool.query("ALTER TABLE routes ADD COLUMN dropoff_points TEXT;");
+      console.log("✅ Added dropoff_points to routes");
+    }
 
     // 3. Add columns to trip_instances
     const [tripCols] = await pool.query("SHOW COLUMNS FROM trip_instances;");

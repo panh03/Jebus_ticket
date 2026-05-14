@@ -1,6 +1,18 @@
 const pool = require("../config/db");
 const fs = require('fs');
 
+const parsePointOptions = (value) => {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.filter(Boolean);
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed.filter(Boolean);
+  } catch (error) {
+    return String(value).split(/\r?\n|,/).map(point => point.trim()).filter(Boolean);
+  }
+  return [];
+};
+
 const bookingController = {
   create: async (req, res) => {
     let connection;
@@ -13,6 +25,25 @@ const bookingController = {
       await connection.beginTransaction();
 
       const { trip_instance_id, seat_ids, total_price, payment_method, pickup_point, dropoff_point, points_used = 0 } = req.body;
+
+      const [routeRows] = await connection.execute(
+        `SELECT r.pickup_points, r.dropoff_points
+         FROM trip_instances ti
+         JOIN trip_schedules ts ON ti.schedule_id = ts.id
+         JOIN routes r ON ts.route_id = r.id
+         WHERE ti.id = ?`,
+        [trip_instance_id]
+      );
+
+      if (routeRows.length === 0) throw new Error("Trip not found");
+      const allowedPickupPoints = parsePointOptions(routeRows[0].pickup_points);
+      const allowedDropoffPoints = parsePointOptions(routeRows[0].dropoff_points);
+      if (!allowedPickupPoints.includes(pickup_point)) {
+        throw new Error("Invalid pickup point for this route");
+      }
+      if (!allowedDropoffPoints.includes(dropoff_point)) {
+        throw new Error("Invalid drop-off point for this route");
+      }
 
       // Check current points and calculate max redeemable
       const [userRows] = await connection.execute("SELECT total_points FROM users WHERE id = ?", [req.user.id]);

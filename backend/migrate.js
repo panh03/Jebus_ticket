@@ -34,6 +34,17 @@ async function migrate() {
       console.log("✅ Updated bookings table");
     }
 
+    const [routePickupColumn] = await pool.query("SHOW COLUMNS FROM routes LIKE 'pickup_points'");
+    const [routeDropoffColumn] = await pool.query("SHOW COLUMNS FROM routes LIKE 'dropoff_points'");
+    const routeAlterClauses = [];
+    if (routePickupColumn.length === 0) routeAlterClauses.push("ADD COLUMN pickup_points TEXT");
+    if (routeDropoffColumn.length === 0) routeAlterClauses.push("ADD COLUMN dropoff_points TEXT");
+
+    if (routeAlterClauses.length > 0) {
+      await pool.query(`ALTER TABLE routes ${routeAlterClauses.join(", ")};`);
+      console.log("✅ Updated routes pickup/dropoff points");
+    }
+
     const [paymentTransactionColumn] = await pool.query("SHOW COLUMNS FROM payments LIKE 'transaction_code'");
     if (paymentTransactionColumn.length === 0) {
       await pool.query(`

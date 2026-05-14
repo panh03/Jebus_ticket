@@ -133,7 +133,7 @@ const tripController = {
     try {
       const { id } = req.params;
       const [trips] = await pool.execute(
-        `SELECT ti.*, ts.price, o.name as operator_name, r.from_city as \`from\`, r.to_city as \`to\`
+        `SELECT ti.*, ts.price, o.name as operator_name, r.from_city as \`from\`, r.to_city as \`to\`, r.pickup_points, r.dropoff_points
          FROM trip_instances ti
          JOIN trip_schedules ts ON ti.schedule_id = ts.id
          JOIN operators o ON ts.operator_id = o.id

@@ -860,6 +860,19 @@
   border-color: #6366f1;
 }
 
+.textarea-input {
+  min-height: 110px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.field-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
 .form-checkbox {
   display: flex;
   align-items: center;

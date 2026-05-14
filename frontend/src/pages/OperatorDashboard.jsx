@@ -32,8 +32,18 @@ const OperatorDashboard = () => {
    // Modal & Form States
    const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
    const [isTripModalOpen, setIsTripModalOpen] = useState(false);
+   const emptyRouteForm = {
+      from_city: "",
+      to_city: "",
+      distance: "",
+      duration: "",
+      base_price: "",
+      pickup_points: "",
+      dropoff_points: "",
+      is_active: true
+   };
    const [routeForm, setRouteForm] = useState({
-      from_city: "", to_city: "", distance: "", duration: "", base_price: "", is_active: true
+      ...emptyRouteForm
    });
    const [tripForm, setTripForm] = useState({
       route_id: "", bus_info: "", capacity: 36, departs_at: "", arrives_at: "", price_multiplier: 1.0, status: "scheduled", repeat_7_days: false
@@ -59,6 +69,20 @@ const OperatorDashboard = () => {
       }
       return new Date(dateStr).toLocaleDateString();
    };
+
+   const pointsToText = (value) => {
+      if (!value) return "";
+      if (Array.isArray(value)) return value.join("\n");
+      try {
+         const parsed = JSON.parse(value);
+         if (Array.isArray(parsed)) return parsed.join("\n");
+      } catch (error) {
+         return String(value);
+      }
+      return String(value);
+   };
+
+   const countPoints = (value) => pointsToText(value).split(/\r?\n|,/).filter(point => point.trim()).length;
 
    // Helper for auth headers
    const getAuthHeader = () => {
@@ -177,14 +201,14 @@ const OperatorDashboard = () => {
          }
          setIsRouteModalOpen(false);
          setEditingRoute(null);
-         setRouteForm({ from_city: "", to_city: "", distance: "", duration: "", base_price: "", is_active: true });
+         setRouteForm({ ...emptyRouteForm });
          fetchActiveTabData();
       } catch (err) { alert("Failed to save route"); }
    };
 
    const openRouteModal = () => {
       setEditingRoute(null);
-      setRouteForm({ from_city: "", to_city: "", distance: "", duration: "", base_price: "", is_active: true });
+      setRouteForm({ ...emptyRouteForm });
       setIsRouteModalOpen(true);
    };
 
@@ -197,6 +221,8 @@ const OperatorDashboard = () => {
          distance: route.distance,
          duration: route.duration,
          base_price: route.base_price,
+         pickup_points: pointsToText(route.pickup_points),
+         dropoff_points: pointsToText(route.dropoff_points),
          is_active: route.is_active
       });
       setIsRouteModalOpen(true);
@@ -656,6 +682,8 @@ const OperatorDashboard = () => {
                                     <div className="route-tags">
                                        <span className="meta-item"><i className="fas fa-clock"></i> {route.duration}</span>
                                        <span className="meta-item"><i className="fas fa-tag"></i> {Number(route.base_price || 0).toLocaleString()} VND</span>
+                                       <span className="meta-item"><i className="fas fa-map-pin"></i> {countPoints(route.pickup_points)} pickups</span>
+                                       <span className="meta-item"><i className="fas fa-location-dot"></i> {countPoints(route.dropoff_points)} drop-offs</span>
                                        <span className={`meta-item ${route.active_trips > 0 ? 'active-pulse' : ''}`}>
                                           <i className="fas fa-bus"></i> {route.active_trips} Active Trips
                                        </span>
@@ -842,6 +870,24 @@ const OperatorDashboard = () => {
                            <input type="number" className="form-input" required
                               value={routeForm.base_price} onChange={e => setRouteForm({ ...routeForm, base_price: e.target.value })} />
                         </div>
+                        <div className="form-row">
+                           <div className="form-group">
+                              <label>Pickup Places</label>
+                              <textarea className="form-input textarea-input" required rows="4"
+                                 placeholder="One pickup place per line"
+                                 value={routeForm.pickup_points}
+                                 onChange={e => setRouteForm({ ...routeForm, pickup_points: e.target.value })} />
+                              <p className="field-hint">Shown to passengers before payment.</p>
+                           </div>
+                           <div className="form-group">
+                              <label>Drop-off Places</label>
+                              <textarea className="form-input textarea-input" required rows="4"
+                                 placeholder="One drop-off place per line"
+                                 value={routeForm.dropoff_points}
+                                 onChange={e => setRouteForm({ ...routeForm, dropoff_points: e.target.value })} />
+                              <p className="field-hint">Shown to passengers before payment.</p>
+                           </div>
+                        </div>
                         <div className="form-group">
                            <label className="form-checkbox">
                               <input type="checkbox" checked={routeForm.is_active}
@@ -875,7 +921,9 @@ const OperatorDashboard = () => {
                               onChange={e => setTripForm({ ...tripForm, route_id: e.target.value })}>
                               <option value="">-- Choose a Route --</option>
                               {routes.map(r => (
-                                 <option key={r.id} value={r.id}>{r.from_city} &rarr; {r.to_city}</option>
+                                 <option key={r.id} value={r.id}>
+                                    {r.from_city} &rarr; {r.to_city} ({countPoints(r.pickup_points)} pickups, {countPoints(r.dropoff_points)} drop-offs)
+                                 </option>
                               ))}
                            </select>
                         </div>
