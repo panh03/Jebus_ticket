@@ -4,13 +4,6 @@
 - `backend/`: API server Node.js + Express + MySQL
 - `frontend/`: ứng dụng React + Vite
 
-## Mục tiêu nộp bài
-
-- Mã nguồn phải chạy được và tương ứng với nội dung báo cáo/video demo.
-- Thư mục rõ ràng, không chứa file hoặc dữ liệu không cần thiết.
-- Thực hiện đầy đủ các chức năng đã mô tả trong báo cáo.
-- Nếu sử dụng mô hình học máy, chỉ đưa phần sử dụng mô hình trong mã nguồn; phần huấn luyện mô tả chi tiết trong hướng dẫn.
-
 ## Yêu cầu môi trường
 
 - Node.js 18 hoặc cao hơn
