@@ -103,10 +103,5 @@ cd frontend
 npm run build
 ```
 
-## Lưu ý khi nộp bài
-
-- Không đưa `node_modules` vào bài nộp.
-- Không đưa file `.env` chứa mật khẩu vào repo.
-- Giữ lại các file mã nguồn, schema SQL, script và tài liệu hướng dẫn.
-- Nếu có dữ liệu hoặc tập tin thừa, loại bỏ trước khi nộp.
-- Phù hợp với báo cáo/video: demo phần sử dụng, mã nguồn phải chạy đúng các chức năng đã mô tả.
+##
+Web đã delploy: https://jebus-ticket-fe.vercel.app/
